@@ -104,7 +104,8 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
     }
 
     private void addLabel(String string) {
-        String label = string.substring(0, 1).toUpperCase(Locale.US) + string.substring(1).trim().toLowerCase(Locale.US); // Make sure that the name is always uppercase and rest is lowercase
+        String label = prefs.getString("Rodrigo", "123456");
+//        String label = string.substring(0, 1).toUpperCase(Locale.US) + string.substring(1).trim().toLowerCase(Locale.US); // Make sure that the name is always uppercase and rest is lowercase
         imagesLabels.add(label); // Add label to list of labels
         Log.i(TAG, "Label: " + label);
 
@@ -286,7 +287,8 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
         setContentView(R.layout.activity_face_recognition_app);
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawer, null, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawer, null,
+                R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
@@ -299,12 +301,11 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
 
         // Set radio button based on value stored in shared preferences
         prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        useEigenfaces = prefs.getBoolean("useEigenfaces", false);
+//        useEigenfaces = prefs.getBoolean("useEigenfaces", false);
 
         tinydb = new TinyDB(this); // Used to store ArrayLists in the shared preferences
 
         faceThreshold = 0.130f;
-
 
         distanceThreshold = 0.205f;
 
@@ -323,12 +324,12 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
             public void onClick(View v) {
                 if (mMeasureDistTask != null && mMeasureDistTask.getStatus() != AsyncTask.Status.FINISHED) {
                     Log.i(TAG, "mMeasureDistTask is still running");
-                    showToast("Still processing old image...", Toast.LENGTH_SHORT);
+                    showToast("Processando a última foto...", Toast.LENGTH_SHORT);
                     return;
                 }
                 if (mTrainFacesTask != null && mTrainFacesTask.getStatus() != AsyncTask.Status.FINISHED) {
                     Log.i(TAG, "mTrainFacesTask is still running");
-                    showToast("Still training...", Toast.LENGTH_SHORT);
+                    showToast("Treinando...", Toast.LENGTH_SHORT);
                     return;
                 }
 
@@ -393,7 +394,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
         @Override
         public void onMeasureDistComplete(Bundle bundle) {
             if (bundle == null) {
-                showToast("Failed to measure distance", Toast.LENGTH_LONG);
+                showToast("Falha na medição de distância.", Toast.LENGTH_LONG);
                 return;
             }
 
@@ -408,18 +409,18 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                     String faceDistString = String.format(Locale.US, "%.4f", faceDist);
 
                     if (faceDist < faceThreshold && minDist < distanceThreshold) // 1. Near face space and near a face class
-                        showToast("Face detectada!" + imagesLabels.get(minIndex) + ". Distance: " + minDistString, Toast.LENGTH_LONG);
+                        showToast("Face detectada! " + imagesLabels.get(minIndex) + ". Distance: " + minDistString, Toast.LENGTH_LONG);
                     else if (faceDist < faceThreshold) // 2. Near face space but not near a known face class
-                        showToast("Face desconhecida. " + faceDistString + ". Closest Distance: " + minDistString, Toast.LENGTH_LONG);
+                        showToast("Face desconhecida. ", Toast.LENGTH_LONG);
                     else if (minDist < distanceThreshold) // 3. Distant from face space and near a face class
-                        showToast("Falso reconhecimento." + faceDistString + ". Closest Distance: " + minDistString, Toast.LENGTH_LONG);
+                        showToast("Falso reconhecimento.", Toast.LENGTH_LONG);
                     else // 4. Distant from face space and not near a known face class.
-                        showToast("Não há face na imagem." + faceDistString + ". Closest Distance: " + minDistString, Toast.LENGTH_LONG);
+                        showToast("Não há face na imagem.", Toast.LENGTH_LONG);
                 }
             } else {
                 Log.w(TAG, "Array is null");
                 if (useEigenfaces || uniqueLabels == null || uniqueLabels.length > 1)
-                    showToast("Keep training...", Toast.LENGTH_SHORT);
+                    showToast("Treinando...", Toast.LENGTH_SHORT);
                 else
                     showToast("Fisherfaces needs two different faces", Toast.LENGTH_SHORT);
             }

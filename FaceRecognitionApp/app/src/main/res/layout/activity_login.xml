@@ -41,7 +41,7 @@
             android:text="@string/label_user"/>
 
         <EditText
-            android:id="@+id/txtUser"
+            android:id="@+id/edtUser"
             android:layout_width="337dp"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-condensed-medium"
@@ -54,7 +54,7 @@
             android:text="@string/label_passwd"/>
 
         <EditText
-            android:id="@+id/txtPassword"
+            android:id="@+id/edtPassword"
             android:layout_width="337dp"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-condensed-medium"
