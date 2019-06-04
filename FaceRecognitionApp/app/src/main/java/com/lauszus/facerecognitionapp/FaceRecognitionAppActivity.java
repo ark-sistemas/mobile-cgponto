@@ -19,9 +19,8 @@
 package com.lauszus.facerecognitionapp;
 
 import android.Manifest;
-import android.animation.Animator;
-import android.animation.ObjectAnimator;
-import android.content.DialogInterface;
+import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.pm.ActivityInfo;
@@ -29,18 +28,15 @@ import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-import android.text.InputType;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.Menu;
@@ -48,16 +44,10 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.SurfaceView;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ListView;
-import android.widget.RadioButton;
-import android.widget.TextView;
 import android.widget.Toast;
+
+import com.lauszus.facerecognitionapp.activity.LoginActivity;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
@@ -72,7 +62,6 @@ import org.opencv.imgproc.Imgproc;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Locale;
@@ -93,6 +82,138 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
     private SharedPreferences prefs;
     private TinyDB tinydb;
     private NativeMethods.TrainFacesTask mTrainFacesTask;
+    private Integer photoNumber = 0;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+        setContentView(R.layout.activity_face_recognition_app);
+
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawer, null,
+                R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        drawer.addDrawerListener(toggle);
+        toggle.syncState();
+
+
+//        useEigenfaces = true;
+//        if (!trainFaces()) {
+//            useEigenfaces = false; // Set variable back
+//            showToast("Still training...", Toast.LENGTH_SHORT);
+//        }
+
+        // Set radio button based on value stored in shared preferences
+        prefs = PreferenceManager.getDefaultSharedPreferences(this);
+//        useEigenfaces = prefs.getBoolean("useEigenfaces", false);
+
+        tinydb = new TinyDB(this); // Used to store ArrayLists in the shared preferences
+
+        faceThreshold = 0.130f;
+
+        distanceThreshold = 0.205f;
+
+        maximumImages = 5;
+
+
+//        Log.i(TAG, "Cleared training set");
+//        images.clear(); // Clear both arrays, when new instance is created
+//        imagesLabels.clear();
+//        showToast("Training set cleared", Toast.LENGTH_SHORT);
+
+        findViewById(R.id.take_picture_button).setOnClickListener(new View.OnClickListener() {
+            NativeMethods.MeasureDistTask mMeasureDistTask;
+
+            SharedPreferences sharedPreferences = getApplicationContext()
+                    .getSharedPreferences("cgponto", Context.MODE_PRIVATE);
+
+            @Override
+            public void onClick(View v) {
+                useEigenfaces = true;
+                if (mMeasureDistTask != null && mMeasureDistTask.getStatus() != AsyncTask.Status.FINISHED) {
+                    Log.i(TAG, "mMeasureDistTask is still running");
+                    showToast("Processando a última foto...", Toast.LENGTH_SHORT);
+                    return;
+                }
+                if (mTrainFacesTask != null && mTrainFacesTask.getStatus() != AsyncTask.Status.FINISHED) {
+                    Log.i(TAG, "mTrainFacesTask is still running");
+                    showToast("Treinando...", Toast.LENGTH_SHORT);
+                    return;
+                }
+
+                Log.i(TAG, "Gray height: " + mGray.height() + " Width: " + mGray.width() + " total: " + mGray.total());
+                if (mGray.total() == 0)
+                    return;
+
+                // Scale image in order to decrease computation time and make the image square,
+                // so it does not crash on phones with different aspect ratios for the front
+                // and back camera
+                Size imageSize = new Size(200, 200);
+                Imgproc.resize(mGray, mGray, imageSize);
+                Log.i(TAG, "Small gray height: " + mGray.height() + " Width: " + mGray.width() + " total: " + mGray.total());
+                //SaveImage(mGray);
+
+                Mat image = mGray.reshape(0, (int) mGray.total()); // Create column vector
+                Log.i(TAG, "Vector height: " + image.height() + " Width: " + image.width() + " total: " + image.total());
+                images.add(image); // Add current image to the array
+
+                if (images.size() > maximumImages) {
+                    images.remove(0); // Remove first image
+                    imagesLabels.remove(0); // Remove first label
+                    Log.i(TAG, "The number of images is limited to: " + images.size());
+                }
+
+                if(sharedPreferences.getBoolean("Rodrigo", Boolean.FALSE)){
+                    addUser();
+                    if(photoNumber == 4){
+                        new Handler().postDelayed(() -> {
+                            Toast.makeText(FaceRecognitionAppActivity.this,
+                                    "Treinamento completo!", Toast.LENGTH_SHORT).show();
+                            startActivity(new Intent(FaceRecognitionAppActivity.this,
+                                    LoginActivity.class));
+                            finish();
+                        }, 2000);
+
+                    }
+                    photoNumber++;
+                } else {
+                    // Calculate normalized Euclidean distance
+                    mMeasureDistTask = new NativeMethods.MeasureDistTask(useEigenfaces, measureDistTaskCallback);
+                    mMeasureDistTask.execute(image);
+                }
+
+            }
+
+
+        });
+
+        final GestureDetector mGestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onDown(MotionEvent e) {
+                return true;
+            }
+            @Override
+            public boolean onDoubleTap(MotionEvent e) {
+                // Show flip animation when the camera is flipped due to a double tap
+//                flipCameraAnimation();
+                return true;
+            }
+        });
+
+        mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.camera_java_surface_view);
+        mOpenCvCameraView.setCameraIndex(prefs.getInt("mCameraIndex", CameraBridgeViewBase.CAMERA_ID_FRONT));
+        mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
+        mOpenCvCameraView.setCvCameraViewListener(this);
+        mOpenCvCameraView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return mGestureDetector.onTouchEvent(event);
+            }
+        });
+
+    }
 
     private void showToast(String message, int duration) {
         if (duration != Toast.LENGTH_SHORT && duration != Toast.LENGTH_LONG)
@@ -103,13 +224,21 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
         mToast.show();
     }
 
-    private void addLabel(String string) {
-        String label = prefs.getString("Rodrigo", "123456");
-//        String label = string.substring(0, 1).toUpperCase(Locale.US) + string.substring(1).trim().toLowerCase(Locale.US); // Make sure that the name is always uppercase and rest is lowercase
-        imagesLabels.add(label); // Add label to list of labels
-        Log.i(TAG, "Label: " + label);
+    private void addUser() {
+        if(photoNumber < 4) {
+            SharedPreferences sharedPreferences = getApplicationContext()
+                    .getSharedPreferences("cgponto", Context.MODE_PRIVATE);
+            String user = sharedPreferences.getString("123456", "");
+            //        String label = string.substring(0, 1).toUpperCase(Locale.US) + string.substring(1).trim().toLowerCase(Locale.US); // Make sure that the name is always uppercase and rest is lowercase
+            if (user == null || user.isEmpty()) {
+                showToast("Usuário não existente", Toast.LENGTH_LONG);
+                finish();
+            }
+            imagesLabels.add(user); // Add label to list of labels
+            Log.i(TAG, "User: " + user);
 
-        trainFaces(); // When we have finished setting the label, then retrain faces
+            trainFaces(); // When we have finished setting the label, then retrain faces
+        }
     }
 
     /**
@@ -182,213 +311,104 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
         }
     };
 
-    private void showLabelsDialog() {
-        Set<String> uniqueLabelsSet = new HashSet<>(imagesLabels); // Get all unique labels
-        if (!uniqueLabelsSet.isEmpty()) { // Make sure that there are any labels
-            // Inspired by: http://stackoverflow.com/questions/15762905/how-can-i-display-a-list-view-in-an-android-alert-dialog
-            AlertDialog.Builder builder = new AlertDialog.Builder(FaceRecognitionAppActivity.this);
-            builder.setTitle("Select label:");
-            builder.setPositiveButton("New face", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    dialog.dismiss();
-                    showEnterLabelDialog();
-                }
-            });
-            builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    dialog.dismiss();
-                    images.remove(images.size() - 1); // Remove last image
-                }
-            });
-            builder.setCancelable(false); // Prevent the user from closing the dialog
-
-            String[] uniqueLabels = uniqueLabelsSet.toArray(new String[uniqueLabelsSet.size()]); // Convert to String array for ArrayAdapter
-            Arrays.sort(uniqueLabels); // Sort labels alphabetically
-            final ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(FaceRecognitionAppActivity.this, android.R.layout.simple_list_item_1, uniqueLabels) {
-                @Override
-                public @NonNull View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
-                    TextView textView = (TextView) super.getView(position, convertView, parent);
-                    if (getResources().getBoolean(R.bool.isTablet))
-                        textView.setTextSize(20); // Make text slightly bigger on tablets compared to phones
-                    else
-                        textView.setTextSize(18); // Increase text size a little bit
-                    return textView;
-                }
-            };
-            ListView mListView = new ListView(FaceRecognitionAppActivity.this);
-            mListView.setAdapter(arrayAdapter); // Set adapter, so the items actually show up
-            builder.setView(mListView); // Set the ListView
-
-            final AlertDialog dialog = builder.show(); // Show dialog and store in final variable, so it can be dismissed by the ListView
-
-            mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                @Override
-                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                    dialog.dismiss();
-                    addLabel(arrayAdapter.getItem(position));
-                }
-            });
-        } else
-            showEnterLabelDialog(); // If there is no existing labels, then ask the user for a new label
-    }
-
-    private void showEnterLabelDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(FaceRecognitionAppActivity.this);
-        builder.setTitle("Please enter your name:");
-
-        final EditText input = new EditText(FaceRecognitionAppActivity.this);
-        input.setInputType(InputType.TYPE_CLASS_TEXT);
-        builder.setView(input);
-
-        builder.setPositiveButton("Submit", null); // Set up positive button, but do not provide a listener, so we can check the string before dismissing the dialog
-        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.dismiss();
-                images.remove(images.size() - 1); // Remove last image
-            }
-        });
-        builder.setCancelable(false); // User has to input a name
-        AlertDialog dialog = builder.create();
-
-        // Source: http://stackoverflow.com/a/7636468/2175837
-        dialog.setOnShowListener(new DialogInterface.OnShowListener() {
-            @Override
-            public void onShow(final DialogInterface dialog) {
-                Button mButton = ((AlertDialog) dialog).getButton(AlertDialog.BUTTON_POSITIVE);
-                mButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        String string = input.getText().toString().trim();
-                        if (!string.isEmpty()) { // Make sure the input is valid
-                            // If input is valid, dismiss the dialog and add the label to the array
-                            dialog.dismiss();
-                            addLabel(string);
-                        }
-                    }
-                });
-            }
-        });
-
-        // Show keyboard, so the user can start typing straight away
-        dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
-
-        dialog.show();
-    }
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-        setContentView(R.layout.activity_face_recognition_app);
-
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawer, null,
-                R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawer.addDrawerListener(toggle);
-        toggle.syncState();
-
-
-        useEigenfaces = true;
-//        if (!trainFaces()) {
-//            useEigenfaces = false; // Set variable back
-//            showToast("Still training...", Toast.LENGTH_SHORT);
+//    private void showLabelsDialog() {
+//        Set<String> uniqueLabelsSet = new HashSet<>(imagesLabels); // Get all unique labels
+//        if (!uniqueLabelsSet.isEmpty()) { // Make sure that there are any labels
+//            // Inspired by: http://stackoverflow.com/questions/15762905/how-can-i-display-a-list-view-in-an-android-alert-dialog
+//            AlertDialog.Builder builder = new AlertDialog.Builder(FaceRecognitionAppActivity.this);
+//            builder.setTitle("Select label:");
+//            builder.setPositiveButton("New face", new DialogInterface.OnClickListener() {
+//                @Override
+//                public void onClick(DialogInterface dialog, int which) {
+//                    dialog.dismiss();
+//                    showEnterLabelDialog();
+//                }
+//            });
+//            builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+//                @Override
+//                public void onClick(DialogInterface dialog, int which) {
+//                    dialog.dismiss();
+//                    images.remove(images.size() - 1); // Remove last image
+//                }
+//            });
+//            builder.setCancelable(false); // Prevent the user from closing the dialog
+//
+//            String[] uniqueLabels = uniqueLabelsSet.toArray(new String[uniqueLabelsSet.size()]); // Convert to String array for ArrayAdapter
+//            Arrays.sort(uniqueLabels); // Sort labels alphabetically
+//            final ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(FaceRecognitionAppActivity.this, android.R.layout.simple_list_item_1, uniqueLabels) {
+//                @Override
+//                public @NonNull View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+//                    TextView textView = (TextView) super.getView(position, convertView, parent);
+//                    if (getResources().getBoolean(R.bool.isTablet))
+//                        textView.setTextSize(20); // Make text slightly bigger on tablets compared to phones
+//                    else
+//                        textView.setTextSize(18); // Increase text size a little bit
+//                    return textView;
+//                }
+//            };
+//            ListView mListView = new ListView(FaceRecognitionAppActivity.this);
+//            mListView.setAdapter(arrayAdapter); // Set adapter, so the items actually show up
+//            builder.setView(mListView); // Set the ListView
+//
+//            final AlertDialog dialog = builder.show(); // Show dialog and store in final variable, so it can be dismissed by the ListView
+//
+//            mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+//                @Override
+//                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+//                    dialog.dismiss();
+//                    addUser(arrayAdapter.getItem(position));
+//                }
+//            });
 //        }
-
-        // Set radio button based on value stored in shared preferences
-        prefs = PreferenceManager.getDefaultSharedPreferences(this);
-//        useEigenfaces = prefs.getBoolean("useEigenfaces", false);
-
-        tinydb = new TinyDB(this); // Used to store ArrayLists in the shared preferences
-
-        faceThreshold = 0.130f;
-
-        distanceThreshold = 0.205f;
-
-        maximumImages = 50;
-
-
-//        Log.i(TAG, "Cleared training set");
-//        images.clear(); // Clear both arrays, when new instance is created
-//        imagesLabels.clear();
-//        showToast("Training set cleared", Toast.LENGTH_SHORT);
-
-        findViewById(R.id.take_picture_button).setOnClickListener(new View.OnClickListener() {
-            NativeMethods.MeasureDistTask mMeasureDistTask;
-
-            @Override
-            public void onClick(View v) {
-                if (mMeasureDistTask != null && mMeasureDistTask.getStatus() != AsyncTask.Status.FINISHED) {
-                    Log.i(TAG, "mMeasureDistTask is still running");
-                    showToast("Processando a última foto...", Toast.LENGTH_SHORT);
-                    return;
-                }
-                if (mTrainFacesTask != null && mTrainFacesTask.getStatus() != AsyncTask.Status.FINISHED) {
-                    Log.i(TAG, "mTrainFacesTask is still running");
-                    showToast("Treinando...", Toast.LENGTH_SHORT);
-                    return;
-                }
-
-                Log.i(TAG, "Gray height: " + mGray.height() + " Width: " + mGray.width() + " total: " + mGray.total());
-                if (mGray.total() == 0)
-                    return;
-
-                // Scale image in order to decrease computation time and make the image square,
-                // so it does not crash on phones with different aspect ratios for the front
-                // and back camera
-                Size imageSize = new Size(200, 200);
-                Imgproc.resize(mGray, mGray, imageSize);
-                Log.i(TAG, "Small gray height: " + mGray.height() + " Width: " + mGray.width() + " total: " + mGray.total());
-                //SaveImage(mGray);
-
-                Mat image = mGray.reshape(0, (int) mGray.total()); // Create column vector
-                Log.i(TAG, "Vector height: " + image.height() + " Width: " + image.width() + " total: " + image.total());
-                images.add(image); // Add current image to the array
-
-                if (images.size() > maximumImages) {
-                    images.remove(0); // Remove first image
-                    imagesLabels.remove(0); // Remove first label
-                    Log.i(TAG, "The number of images is limited to: " + images.size());
-                }
-
-                // Calculate normalized Euclidean distance
-                mMeasureDistTask = new NativeMethods.MeasureDistTask(useEigenfaces, measureDistTaskCallback);
-                mMeasureDistTask.execute(image);
-
-            }
+////        else
+////            showEnterLabelDialog(); // If there is no existing labels, then ask the user for a new label
+//    }
+//
+//    private void showEnterLabelDialog() {
+//        AlertDialog.Builder builder = new AlertDialog.Builder(FaceRecognitionAppActivity.this);
+//        builder.setTitle("Please enter your name:");
+//
+//        final EditText input = new EditText(FaceRecognitionAppActivity.this);
+//        input.setInputType(InputType.TYPE_CLASS_TEXT);
+//        builder.setView(input);
+//
+//        builder.setPositiveButton("Submit", null); // Set up positive button, but do not provide a listener, so we can check the string before dismissing the dialog
+//        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+//            @Override
+//            public void onClick(DialogInterface dialog, int which) {
+//                dialog.dismiss();
+//                images.remove(images.size() - 1); // Remove last image
+//            }
+//        });
+//        builder.setCancelable(false); // User has to input a name
+//        AlertDialog dialog = builder.create();
+//
+//        // Source: http://stackoverflow.com/a/7636468/2175837
+//        dialog.setOnShowListener(new DialogInterface.OnShowListener() {
+//            @Override
+//            public void onShow(final DialogInterface dialog) {
+//                Button mButton = ((AlertDialog) dialog).getButton(AlertDialog.BUTTON_POSITIVE);
+//                mButton.setOnClickListener(new View.OnClickListener() {
+//                    @Override
+//                    public void onClick(View view) {
+//                        String string = input.getText().toString().trim();
+//                        if (!string.isEmpty()) { // Make sure the input is valid
+//                            // If input is valid, dismiss the dialog and add the label to the array
+//                            dialog.dismiss();
+//                            addUser(string);
+//                        }
+//                    }
+//                });
+//            }
+//        });
+//
+//        // Show keyboard, so the user can start typing straight away
+//        dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+//
+//        dialog.show();
+//    }
 
 
-        });
-
-        final GestureDetector mGestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
-            @Override
-            public boolean onDown(MotionEvent e) {
-                return true;
-            }
-            @Override
-            public boolean onDoubleTap(MotionEvent e) {
-                // Show flip animation when the camera is flipped due to a double tap
-//                flipCameraAnimation();
-                return true;
-            }
-        });
-
-        mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.camera_java_surface_view);
-        mOpenCvCameraView.setCameraIndex(prefs.getInt("mCameraIndex", CameraBridgeViewBase.CAMERA_ID_FRONT));
-        mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
-        mOpenCvCameraView.setCvCameraViewListener(this);
-        mOpenCvCameraView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                return mGestureDetector.onTouchEvent(event);
-            }
-        });
-
-    }
 
     private NativeMethods.MeasureDistTask.Callback measureDistTaskCallback = new NativeMethods.MeasureDistTask.Callback() {
         @Override
@@ -409,7 +429,8 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                     String faceDistString = String.format(Locale.US, "%.4f", faceDist);
 
                     if (faceDist < faceThreshold && minDist < distanceThreshold) // 1. Near face space and near a face class
-                        showToast("Face detectada! " + imagesLabels.get(minIndex) + ". Distance: " + minDistString, Toast.LENGTH_LONG);
+                        showToast("Face detectada! " + imagesLabels.get(minIndex) + ", ponto registrado." +
+                                ". Distance: " + minDistString, Toast.LENGTH_LONG);
                     else if (faceDist < faceThreshold) // 2. Near face space but not near a known face class
                         showToast("Face desconhecida. ", Toast.LENGTH_LONG);
                     else if (minDist < distanceThreshold) // 3. Distant from face space and near a face class
@@ -492,27 +513,23 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
-            switch (status) {
-                case LoaderCallbackInterface.SUCCESS:
-                    NativeMethods.loadNativeLibraries(); // Load native libraries after(!) OpenCV initialization
-                    Log.i(TAG, "OpenCV loaded successfully");
-                    mOpenCvCameraView.enableView();
+            if (status == LoaderCallbackInterface.SUCCESS) {
+                NativeMethods.loadNativeLibraries(); // Load native libraries after(!) OpenCV initialization
+                Log.i(TAG, "OpenCV loaded successfully");
+                mOpenCvCameraView.enableView();
 
-                    // Read images and labels from shared preferences
-                    images = tinydb.getListMat("images");
-                    imagesLabels = tinydb.getListString("imagesLabels");
+                // Read images and labels from shared preferences
+                images = tinydb.getListMat("images");
+                imagesLabels = tinydb.getListString("imagesLabels");
 
-                    Log.i(TAG, "Number of images: " + images.size()  + ". Number of labels: " + imagesLabels.size());
-                    if (!images.isEmpty()) {
-                        trainFaces(); // Train images after they are loaded
-                        Log.i(TAG, "Images height: " + images.get(0).height() + " Width: " + images.get(0).width() + " total: " + images.get(0).total());
-                    }
-                    Log.i(TAG, "Labels: " + imagesLabels);
-
-                    break;
-                default:
-                    super.onManagerConnected(status);
-                    break;
+                Log.i(TAG, "Number of images: " + images.size() + ". Number of labels: " + imagesLabels.size());
+                if (!images.isEmpty()) {
+                    trainFaces(); // Train images after they are loaded
+                    Log.i(TAG, "Images height: " + images.get(0).height() + " Width: " + images.get(0).width() + " total: " + images.get(0).total());
+                }
+                Log.i(TAG, "Labels: " + imagesLabels);
+            } else {
+                super.onManagerConnected(status);
             }
         }
     };

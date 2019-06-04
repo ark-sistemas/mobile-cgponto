@@ -49,7 +49,8 @@ public class LoginActivity extends AppCompatActivity {
     public void login(View view) {
         try {
             if(validateFields(edtUser.getText().toString(), edtPassword.getText().toString())) {
-                Intent i = new Intent(LoginActivity.this, isFirstLogin(edtUser.getText().toString()));
+                Intent i = new Intent(LoginActivity.this,
+                        isFirstLogin(edtUser.getText().toString(), edtPassword.getText().toString()));
                 startActivity(i);
             } else{
                 Toast.makeText(this, "Digite o usuário e a senha!", Toast.LENGTH_SHORT).show();
@@ -80,33 +81,38 @@ public class LoginActivity extends AppCompatActivity {
      * <a href="https://android.googlesource.com/platform/frameworks/base/+/master/core/java/android/app/SharedPreferencesImpl.java">
      *     SharedPreferencesImpl
      * </a>
-     * @param userAsKey
+     * @param username
      * @return
      */
-    private Class isFirstLogin(String userAsKey){
+    private Class isFirstLogin(String username, String password){
         SharedPreferences sharedPreferences = getApplicationContext()
                 .getSharedPreferences("cgponto", Context.MODE_PRIVATE);
 
-        if(sharedPreferences.getBoolean(userAsKey, Boolean.TRUE)){
-            setFirstLoginStatus(userAsKey);
+        if(sharedPreferences.getBoolean(username, Boolean.FALSE)){
             return FaceRecognitionAppActivity.class;
         } else {
-            Toast.makeText(this, "Não é a primeira", Toast.LENGTH_SHORT).show();
-            return null;
+            setFirstLoginStatus(username, password);
+//            Toast.makeText(this, "Não é a primeira", Toast.LENGTH_SHORT).show();
+            return FaceRecognitionAppActivity.class;
         }
     }
 
     /**
      * After first sign in, is setted as {@code false} in SharedPreferences the status of
-     * that specific user, where his username is used as key to the Map in SharedPreferences
+     * that specific user, where his username is used as key to the Map in SharedPreferences.
      *
-     * @param userAsKey username used as key to the SharedPreferences
+     * In addition, will be mapped a String using his password as key to his username,
+     * like this : putString(hisPassword, hisUsername), where this will be used to
+     * define when his face will be used to train and when will be used just the recognition
+     *
+     * @param username username used as key and value to the SharedPreferences
      */
-    private void setFirstLoginStatus(String userAsKey){
+    private void setFirstLoginStatus(String username, String password){
         SharedPreferences sharedPreferences = getApplicationContext()
                 .getSharedPreferences("cgponto", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putBoolean(userAsKey, Boolean.FALSE);
+        editor.putBoolean(username, Boolean.TRUE);
+//        editor.putString(password, username);
         editor.apply();
     }
 }
