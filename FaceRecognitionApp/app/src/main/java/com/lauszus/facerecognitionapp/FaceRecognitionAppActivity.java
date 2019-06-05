@@ -115,7 +115,9 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
 
         distanceThreshold = 0.205f;
 
-        maximumImages = 5;
+        maximumImages = 9;
+
+        useEigenfaces = true;
 
 
 //        Log.i(TAG, "Cleared training set");
@@ -131,7 +133,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
 
             @Override
             public void onClick(View v) {
-                useEigenfaces = true;
+
                 if (mMeasureDistTask != null && mMeasureDistTask.getStatus() != AsyncTask.Status.FINISHED) {
                     Log.i(TAG, "mMeasureDistTask is still running");
                     showToast("Processando a última foto...", Toast.LENGTH_SHORT);
@@ -147,37 +149,45 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                 if (mGray.total() == 0)
                     return;
 
-                // Scale image in order to decrease computation time and make the image square,
-                // so it does not crash on phones with different aspect ratios for the front
-                // and back camera
-                Size imageSize = new Size(200, 200);
-                Imgproc.resize(mGray, mGray, imageSize);
-                Log.i(TAG, "Small gray height: " + mGray.height() + " Width: " + mGray.width() + " total: " + mGray.total());
-                //SaveImage(mGray);
-
                 Mat image = mGray.reshape(0, (int) mGray.total()); // Create column vector
-                Log.i(TAG, "Vector height: " + image.height() + " Width: " + image.width() + " total: " + image.total());
-                images.add(image); // Add current image to the array
 
-                if (images.size() > maximumImages) {
-                    images.remove(0); // Remove first image
-                    imagesLabels.remove(0); // Remove first label
-                    Log.i(TAG, "The number of images is limited to: " + images.size());
-                }
+                if(!sharedPreferences.getBoolean("Rodrigo", Boolean.TRUE)){
+                    // Scale image in order to decrease computation time and make the image square,
+                    // so it does not crash on phones with different aspect ratios for the front
+                    // and back camera
+                    Size imageSize = new Size(200, 200);
+                    Imgproc.resize(mGray, mGray, imageSize);
+                    Log.i(TAG, "Small gray height: " + mGray.height() + " Width: " + mGray.width() + " total: " + mGray.total());
+                    //SaveImage(mGray);
 
-                if(sharedPreferences.getBoolean("Rodrigo", Boolean.FALSE)){
-                    addUser();
-                    if(photoNumber == 4){
+                    Log.i(TAG, "Vector height: " + image.height() + " Width: " + image.width() + " total: " + image.total());
+                    images.add(image); // Add current image to the array
+
+    //                if (images.size() > maximumImages) {
+    //                    images.remove(0); // Remove first image
+    //                    imagesLabels.remove(0); // Remove first label
+    //                    Log.i(TAG, "The number of images is limited to: " + images.size());
+    //                }
+
+
+
+                    if(sharedPreferences.getInt("photoNumber", 0) == 2){
+                        SharedPreferences.Editor editor = sharedPreferences.edit();
+                        editor.putBoolean("Rodrigo", Boolean.TRUE);
+                        editor.apply();
                         new Handler().postDelayed(() -> {
                             Toast.makeText(FaceRecognitionAppActivity.this,
                                     "Treinamento completo!", Toast.LENGTH_SHORT).show();
                             startActivity(new Intent(FaceRecognitionAppActivity.this,
                                     LoginActivity.class));
                             finish();
-                        }, 2000);
+                        }, 3000);
 
+                    }else {
+                        addUser();
+                        setPhotoNumber(photoNumber);
+                        photoNumber++;
                     }
-                    photoNumber++;
                 } else {
                     // Calculate normalized Euclidean distance
                     mMeasureDistTask = new NativeMethods.MeasureDistTask(useEigenfaces, measureDistTaskCallback);
@@ -225,20 +235,27 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
     }
 
     private void addUser() {
-        if(photoNumber < 4) {
-            SharedPreferences sharedPreferences = getApplicationContext()
-                    .getSharedPreferences("cgponto", Context.MODE_PRIVATE);
-            String user = sharedPreferences.getString("123456", "");
-            //        String label = string.substring(0, 1).toUpperCase(Locale.US) + string.substring(1).trim().toLowerCase(Locale.US); // Make sure that the name is always uppercase and rest is lowercase
-            if (user == null || user.isEmpty()) {
-                showToast("Usuário não existente", Toast.LENGTH_LONG);
-                finish();
-            }
-            imagesLabels.add(user); // Add label to list of labels
-            Log.i(TAG, "User: " + user);
-
-            trainFaces(); // When we have finished setting the label, then retrain faces
+        SharedPreferences sharedPreferences = getApplicationContext()
+                .getSharedPreferences("cgponto", Context.MODE_PRIVATE);
+        String user = sharedPreferences.getString("123456", "");
+        //        String label = string.substring(0, 1).toUpperCase(Locale.US) + string.substring(1).trim().toLowerCase(Locale.US); // Make sure that the name is always uppercase and rest is lowercase
+        if (user == null || user.isEmpty()) {
+            showToast("Usuário não existente", Toast.LENGTH_LONG);
+            finish();
+            return;
         }
+        imagesLabels.add(user); // Add label to list of labels
+        Log.i(TAG, "User: " + user);
+
+        trainFaces(); // When we have finished setting the label, then retrain faces
+    }
+
+    private void setPhotoNumber(Integer quantity){
+        SharedPreferences sharedPreferences = getApplicationContext()
+                .getSharedPreferences("cgponto", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putInt("photoNumber", quantity);
+        editor.apply();
     }
 
     /**
@@ -305,9 +322,9 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
         @Override
         public void onTrainFacesComplete(boolean result) {
             if (result)
-                showToast("Training complete", Toast.LENGTH_SHORT);
+                showToast("Pronto para treinamento!", Toast.LENGTH_SHORT);
             else
-                showToast("Training failed", Toast.LENGTH_LONG);
+                showToast("Erro na preparação.", Toast.LENGTH_LONG);
         }
     };
 

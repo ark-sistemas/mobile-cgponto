@@ -88,10 +88,10 @@ public class LoginActivity extends AppCompatActivity {
         SharedPreferences sharedPreferences = getApplicationContext()
                 .getSharedPreferences("cgponto", Context.MODE_PRIVATE);
 
-        if(sharedPreferences.getBoolean(username, Boolean.FALSE)){
+        if(!sharedPreferences.getBoolean(username, Boolean.FALSE)){
+            setFirstLoginStatus(username, password);
             return FaceRecognitionAppActivity.class;
         } else {
-            setFirstLoginStatus(username, password);
 //            Toast.makeText(this, "Não é a primeira", Toast.LENGTH_SHORT).show();
             return FaceRecognitionAppActivity.class;
         }
@@ -111,8 +111,8 @@ public class LoginActivity extends AppCompatActivity {
         SharedPreferences sharedPreferences = getApplicationContext()
                 .getSharedPreferences("cgponto", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putBoolean(username, Boolean.TRUE);
-//        editor.putString(password, username);
+        editor.putBoolean(username, Boolean.FALSE);
+        editor.putString(password, username);
         editor.apply();
     }
 }
