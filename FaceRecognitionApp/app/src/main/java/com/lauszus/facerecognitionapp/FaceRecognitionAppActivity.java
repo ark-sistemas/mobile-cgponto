@@ -19,7 +19,9 @@
 package com.lauszus.facerecognitionapp;
 
 import android.Manifest;
-import android.content.Context;
+import android.animation.Animator;
+import android.animation.ObjectAnimator;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
@@ -31,12 +33,16 @@ import android.os.Environment;
 import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.text.InputType;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.Menu;
@@ -44,10 +50,19 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ListView;
+import android.widget.RadioButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.lauszus.facerecognitionapp.activity.LoginActivity;
+import com.lauszus.facerecognitionapp.util.PreferencesMap;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
@@ -62,6 +77,7 @@ import org.opencv.imgproc.Imgproc;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Locale;
@@ -77,153 +93,15 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
     private Mat mRgba, mGray;
     private Toast mToast;
     private boolean useEigenfaces;
+    private SeekBarArrows mThresholdFace, mThresholdDistance, mMaximumImages;
     private float faceThreshold, distanceThreshold;
     private int maximumImages;
     private SharedPreferences prefs;
+    private SharedPreferences mySharedPrefs;
     private TinyDB tinydb;
+    private Toolbar mToolbar;
     private NativeMethods.TrainFacesTask mTrainFacesTask;
     private Integer photoNumber = 0;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-        setContentView(R.layout.activity_face_recognition_app);
-
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawer, null,
-                R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawer.addDrawerListener(toggle);
-        toggle.syncState();
-
-
-//        useEigenfaces = true;
-//        if (!trainFaces()) {
-//            useEigenfaces = false; // Set variable back
-//            showToast("Still training...", Toast.LENGTH_SHORT);
-//        }
-
-        // Set radio button based on value stored in shared preferences
-        prefs = PreferenceManager.getDefaultSharedPreferences(this);
-//        useEigenfaces = prefs.getBoolean("useEigenfaces", false);
-
-        tinydb = new TinyDB(this); // Used to store ArrayLists in the shared preferences
-
-        faceThreshold = 0.130f;
-
-        distanceThreshold = 0.205f;
-
-        maximumImages = 9;
-
-        useEigenfaces = true;
-
-
-//        Log.i(TAG, "Cleared training set");
-//        images.clear(); // Clear both arrays, when new instance is created
-//        imagesLabels.clear();
-//        showToast("Training set cleared", Toast.LENGTH_SHORT);
-
-        findViewById(R.id.take_picture_button).setOnClickListener(new View.OnClickListener() {
-            NativeMethods.MeasureDistTask mMeasureDistTask;
-
-            SharedPreferences sharedPreferences = getApplicationContext()
-                    .getSharedPreferences("cgponto", Context.MODE_PRIVATE);
-
-            @Override
-            public void onClick(View v) {
-
-                if (mMeasureDistTask != null && mMeasureDistTask.getStatus() != AsyncTask.Status.FINISHED) {
-                    Log.i(TAG, "mMeasureDistTask is still running");
-                    showToast("Processando a última foto...", Toast.LENGTH_SHORT);
-                    return;
-                }
-                if (mTrainFacesTask != null && mTrainFacesTask.getStatus() != AsyncTask.Status.FINISHED) {
-                    Log.i(TAG, "mTrainFacesTask is still running");
-                    showToast("Treinando...", Toast.LENGTH_SHORT);
-                    return;
-                }
-
-                Log.i(TAG, "Gray height: " + mGray.height() + " Width: " + mGray.width() + " total: " + mGray.total());
-                if (mGray.total() == 0)
-                    return;
-
-                Mat image = mGray.reshape(0, (int) mGray.total()); // Create column vector
-
-                if(!sharedPreferences.getBoolean("Rodrigo", Boolean.TRUE)){
-                    // Scale image in order to decrease computation time and make the image square,
-                    // so it does not crash on phones with different aspect ratios for the front
-                    // and back camera
-                    Size imageSize = new Size(200, 200);
-                    Imgproc.resize(mGray, mGray, imageSize);
-                    Log.i(TAG, "Small gray height: " + mGray.height() + " Width: " + mGray.width() + " total: " + mGray.total());
-                    //SaveImage(mGray);
-
-                    Log.i(TAG, "Vector height: " + image.height() + " Width: " + image.width() + " total: " + image.total());
-                    images.add(image); // Add current image to the array
-
-    //                if (images.size() > maximumImages) {
-    //                    images.remove(0); // Remove first image
-    //                    imagesLabels.remove(0); // Remove first label
-    //                    Log.i(TAG, "The number of images is limited to: " + images.size());
-    //                }
-
-
-
-                    if(sharedPreferences.getInt("photoNumber", 0) == 2){
-                        SharedPreferences.Editor editor = sharedPreferences.edit();
-                        editor.putBoolean("Rodrigo", Boolean.TRUE);
-                        editor.apply();
-                        new Handler().postDelayed(() -> {
-                            Toast.makeText(FaceRecognitionAppActivity.this,
-                                    "Treinamento completo!", Toast.LENGTH_SHORT).show();
-                            startActivity(new Intent(FaceRecognitionAppActivity.this,
-                                    LoginActivity.class));
-                            finish();
-                        }, 3000);
-
-                    }else {
-                        addUser();
-                        setPhotoNumber(photoNumber);
-                        photoNumber++;
-                    }
-                } else {
-                    // Calculate normalized Euclidean distance
-                    mMeasureDistTask = new NativeMethods.MeasureDistTask(useEigenfaces, measureDistTaskCallback);
-                    mMeasureDistTask.execute(image);
-                }
-
-            }
-
-
-        });
-
-        final GestureDetector mGestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
-            @Override
-            public boolean onDown(MotionEvent e) {
-                return true;
-            }
-            @Override
-            public boolean onDoubleTap(MotionEvent e) {
-                // Show flip animation when the camera is flipped due to a double tap
-//                flipCameraAnimation();
-                return true;
-            }
-        });
-
-        mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.camera_java_surface_view);
-        mOpenCvCameraView.setCameraIndex(prefs.getInt("mCameraIndex", CameraBridgeViewBase.CAMERA_ID_FRONT));
-        mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
-        mOpenCvCameraView.setCvCameraViewListener(this);
-        mOpenCvCameraView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                return mGestureDetector.onTouchEvent(event);
-            }
-        });
-
-    }
 
     private void showToast(String message, int duration) {
         if (duration != Toast.LENGTH_SHORT && duration != Toast.LENGTH_LONG)
@@ -235,9 +113,8 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
     }
 
     private void addUser() {
-        SharedPreferences sharedPreferences = getApplicationContext()
-                .getSharedPreferences("cgponto", Context.MODE_PRIVATE);
-        String user = sharedPreferences.getString("123456", "");
+
+        String user = mySharedPrefs.getString("123456", "");
         //        String label = string.substring(0, 1).toUpperCase(Locale.US) + string.substring(1).trim().toLowerCase(Locale.US); // Make sure that the name is always uppercase and rest is lowercase
         if (user == null || user.isEmpty()) {
             showToast("Usuário não existente", Toast.LENGTH_LONG);
@@ -250,13 +127,13 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
         trainFaces(); // When we have finished setting the label, then retrain faces
     }
 
-    private void setPhotoNumber(Integer quantity){
-        SharedPreferences sharedPreferences = getApplicationContext()
-                .getSharedPreferences("cgponto", Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putInt("photoNumber", quantity);
-        editor.apply();
-    }
+//    private void addUser(String string) {
+//        String label = string.substring(0, 1).toUpperCase(Locale.US) + string.substring(1).trim().toLowerCase(Locale.US); // Make sure that the name is always uppercase and rest is lowercase
+//        imagesLabels.add(label); // Add label to list of labels
+//        Log.i(TAG, "Label: " + label);
+//
+//        trainFaces(); // When we have finished setting the label, then retrain faces
+//    }
 
     /**
      * Train faces using stored images.
@@ -322,9 +199,9 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
         @Override
         public void onTrainFacesComplete(boolean result) {
             if (result)
-                showToast("Pronto para treinamento!", Toast.LENGTH_SHORT);
+                showToast("Training complete", Toast.LENGTH_SHORT);
             else
-                showToast("Erro na preparação.", Toast.LENGTH_LONG);
+                showToast("Training failed", Toast.LENGTH_LONG);
         }
     };
 
@@ -376,11 +253,10 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
 //                    addUser(arrayAdapter.getItem(position));
 //                }
 //            });
-//        }
-////        else
-////            showEnterLabelDialog(); // If there is no existing labels, then ask the user for a new label
+//        } else
+//            showEnterLabelDialog(); // If there is no existing labels, then ask the user for a new label
 //    }
-//
+
 //    private void showEnterLabelDialog() {
 //        AlertDialog.Builder builder = new AlertDialog.Builder(FaceRecognitionAppActivity.this);
 //        builder.setTitle("Please enter your name:");
@@ -425,13 +301,208 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
 //        dialog.show();
 //    }
 
+    private void setPhotoNumber(Integer quantity){
+        Editor editor = mySharedPrefs.edit();
+        editor.putInt("photoNumber", quantity);
+        editor.apply();
+    }
 
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+        setContentView(R.layout.activity_face_recognition_app);
+        mToolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(mToolbar); // Sets the Toolbar to act as the ActionBar for this Activity window
+        mySharedPrefs = PreferencesMap.getSharedPreferences(this);
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawer, mToolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        drawer.addDrawerListener(toggle);
+        toggle.syncState();
+
+        final RadioButton mRadioButtonEigenfaces =  findViewById(R.id.eigenfaces);
+        final RadioButton mRadioButtonFisherfaces = findViewById(R.id.fisherfaces);
+
+        mRadioButtonEigenfaces.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                useEigenfaces = true;
+                if (!trainFaces()) {
+                    useEigenfaces = false; // Set variable back
+                    showToast("Still training...", Toast.LENGTH_SHORT);
+                    mRadioButtonEigenfaces.setChecked(useEigenfaces);
+                    mRadioButtonFisherfaces.setChecked(!useEigenfaces);
+                }
+            }
+        });
+        mRadioButtonFisherfaces.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                useEigenfaces = false;
+                if (!trainFaces()) {
+                    useEigenfaces = true; // Set variable back
+                    showToast("Still training...", Toast.LENGTH_SHORT);
+                    mRadioButtonEigenfaces.setChecked(useEigenfaces);
+                    mRadioButtonFisherfaces.setChecked(!useEigenfaces);
+                }
+            }
+        });
+
+        // Set radio button based on value stored in shared preferences
+        prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        useEigenfaces = prefs.getBoolean("useEigenfaces", false);
+        mRadioButtonEigenfaces.setChecked(useEigenfaces);
+        mRadioButtonFisherfaces.setChecked(!useEigenfaces);
+
+        tinydb = new TinyDB(this); // Used to store ArrayLists in the shared preferences
+
+        mThresholdFace = (SeekBarArrows) findViewById(R.id.threshold_face);
+        mThresholdFace.setOnSeekBarArrowsChangeListener(new SeekBarArrows.OnSeekBarArrowsChangeListener() {
+            @Override
+            public void onProgressChanged(float progress) {
+                Log.i(TAG, "Face threshold: " + mThresholdFace.progressToString(progress));
+                faceThreshold = progress;
+            }
+        });
+        faceThreshold = mThresholdFace.getProgress(); // Get initial value
+
+        mThresholdDistance = (SeekBarArrows) findViewById(R.id.threshold_distance);
+        mThresholdDistance.setOnSeekBarArrowsChangeListener(new SeekBarArrows.OnSeekBarArrowsChangeListener() {
+            @Override
+            public void onProgressChanged(float progress) {
+                Log.i(TAG, "Distance threshold: " + mThresholdDistance.progressToString(progress));
+                distanceThreshold = progress;
+            }
+        });
+        distanceThreshold = mThresholdDistance.getProgress(); // Get initial value
+
+        mMaximumImages = (SeekBarArrows) findViewById(R.id.maximum_images);
+        mMaximumImages.setOnSeekBarArrowsChangeListener(new SeekBarArrows.OnSeekBarArrowsChangeListener() {
+            @Override
+            public void onProgressChanged(float progress) {
+                Log.i(TAG, "Maximum number of images: " + mMaximumImages.progressToString(progress));
+                maximumImages = (int)progress;
+                if (images != null && images.size() > maximumImages) {
+                    int nrRemoveImages = images.size() - maximumImages;
+                    Log.i(TAG, "Removed " + nrRemoveImages + " images from the list");
+                    images.subList(0, nrRemoveImages).clear(); // Remove oldest images
+                    imagesLabels.subList(0, nrRemoveImages).clear(); // Remove oldest labels
+                    trainFaces(); // Retrain faces
+                }
+            }
+        });
+        maximumImages = (int)mMaximumImages.getProgress(); // Get initial value
+
+        findViewById(R.id.clear_button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.i(TAG, "Cleared training set");
+                images.clear(); // Clear both arrays, when new instance is created
+                imagesLabels.clear();
+                showToast("Training set cleared", Toast.LENGTH_SHORT);
+            }
+        });
+
+        findViewById(R.id.take_picture_button).setOnClickListener(new View.OnClickListener() {
+            NativeMethods.MeasureDistTask mMeasureDistTask;
+
+            @Override
+            public void onClick(View v) {
+                if (mMeasureDistTask != null && mMeasureDistTask.getStatus() != AsyncTask.Status.FINISHED) {
+                    Log.i(TAG, "mMeasureDistTask is still running");
+                    showToast("Still processing old image...", Toast.LENGTH_SHORT);
+                    return;
+                }
+                if (mTrainFacesTask != null && mTrainFacesTask.getStatus() != AsyncTask.Status.FINISHED) {
+                    Log.i(TAG, "mTrainFacesTask is still running");
+                    showToast("Still training...", Toast.LENGTH_SHORT);
+                    return;
+                }
+
+                Log.i(TAG, "Gray height: " + mGray.height() + " Width: " + mGray.width() + " total: " + mGray.total());
+                if (mGray.total() == 0)
+                    return;
+
+                Mat image = new Mat();
+
+                    // Scale image in order to decrease computation time and make the image square,
+                    // so it does not crash on phones with different aspect ratios for the front
+                    // and back camera
+                    Size imageSize = new Size(200, 200);
+                    Imgproc.resize(mGray, mGray, imageSize);
+                    Log.i(TAG, "Small gray height: " + mGray.height() + " Width: " + mGray.width() + " total: " + mGray.total());
+                    //SaveImage(mGray);
+
+                    image = mGray.reshape(0, (int) mGray.total()); // Create column vector
+                    Log.i(TAG, "Vector height: " + image.height() + " Width: " + image.width() + " total: " + image.total());
+                    images.add(image); // Add current image to the array
+
+                    if (images.size() > maximumImages) {
+                        images.remove(0); // Remove first image
+                        imagesLabels.remove(0); // Remove first label
+                        Log.i(TAG, "The number of images is limited to: " + images.size());
+                    }
+
+                if(!mySharedPrefs.getBoolean("Rodrigo", Boolean.TRUE)) {
+                    if(mySharedPrefs.getInt("photoNumber", 0) == 2){
+                        Editor editor = mySharedPrefs.edit();
+                        editor.putBoolean("Rodrigo", Boolean.TRUE);
+                        editor.apply();
+                        new Handler().postDelayed(() -> {
+                            Toast.makeText(FaceRecognitionAppActivity.this,
+                                    "Treinamento completo!", Toast.LENGTH_SHORT).show();
+                            startActivity(new Intent(FaceRecognitionAppActivity.this,
+                                    LoginActivity.class));
+                            finish();
+                        }, 2000);
+                    } else {
+                        mMeasureDistTask = new NativeMethods.MeasureDistTask(useEigenfaces, measureDistTaskCallback);
+                        mMeasureDistTask.execute(image);
+                        addUser();
+                        setPhotoNumber(++photoNumber);
+                    }
+                } else {
+                    // Calculate normalized Euclidean distance
+                    mMeasureDistTask = new NativeMethods.MeasureDistTask(useEigenfaces, measureDistTaskCallback);
+                    mMeasureDistTask.execute(image);
+                }
+
+//                showLabelsDialog();
+            }
+        });
+
+        final GestureDetector mGestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onDown(MotionEvent e) {
+                return true;
+            }
+            @Override
+            public boolean onDoubleTap(MotionEvent e) {
+                // Show flip animation when the camera is flipped due to a double tap
+                flipCameraAnimation();
+                return true;
+            }
+        });
+
+        mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.camera_java_surface_view);
+        mOpenCvCameraView.setCameraIndex(prefs.getInt("mCameraIndex", CameraBridgeViewBase.CAMERA_ID_FRONT));
+        mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
+        mOpenCvCameraView.setCvCameraViewListener(this);
+        mOpenCvCameraView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return mGestureDetector.onTouchEvent(event);
+            }
+        });
+    }
 
     private NativeMethods.MeasureDistTask.Callback measureDistTaskCallback = new NativeMethods.MeasureDistTask.Callback() {
         @Override
         public void onMeasureDistComplete(Bundle bundle) {
             if (bundle == null) {
-                showToast("Falha na medição de distância.", Toast.LENGTH_LONG);
+                showToast("Failed to measure distance", Toast.LENGTH_LONG);
                 return;
             }
 
@@ -446,19 +517,18 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                     String faceDistString = String.format(Locale.US, "%.4f", faceDist);
 
                     if (faceDist < faceThreshold && minDist < distanceThreshold) // 1. Near face space and near a face class
-                        showToast("Face detectada! " + imagesLabels.get(minIndex) + ", ponto registrado." +
-                                ". Distance: " + minDistString, Toast.LENGTH_LONG);
+                        showToast("Face detected: " + imagesLabels.get(minIndex) + ". Distance: " + minDistString, Toast.LENGTH_LONG);
                     else if (faceDist < faceThreshold) // 2. Near face space but not near a known face class
-                        showToast("Face desconhecida. ", Toast.LENGTH_LONG);
+                        showToast("Unknown face. Face distance: " + faceDistString + ". Closest Distance: " + minDistString, Toast.LENGTH_LONG);
                     else if (minDist < distanceThreshold) // 3. Distant from face space and near a face class
-                        showToast("Falso reconhecimento.", Toast.LENGTH_LONG);
+                        showToast("False recognition. Face distance: " + faceDistString + ". Closest Distance: " + minDistString, Toast.LENGTH_LONG);
                     else // 4. Distant from face space and not near a known face class.
-                        showToast("Não há face na imagem.", Toast.LENGTH_LONG);
+                        showToast("Image is not a face. Face distance: " + faceDistString + ". Closest Distance: " + minDistString, Toast.LENGTH_LONG);
                 }
             } else {
                 Log.w(TAG, "Array is null");
                 if (useEigenfaces || uniqueLabels == null || uniqueLabels.length > 1)
-                    showToast("Treinando...", Toast.LENGTH_SHORT);
+                    showToast("Keep training...", Toast.LENGTH_SHORT);
                 else
                     showToast("Fisherfaces needs two different faces", Toast.LENGTH_SHORT);
             }
@@ -467,13 +537,15 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
-        if (requestCode == PERMISSIONS_REQUEST_CODE) {// If request is cancelled, the result arrays are empty.
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                loadOpenCV();
-            } else {
-                showToast("Permission required!", Toast.LENGTH_LONG);
-                finish();
-            }
+        switch (requestCode) {
+            case PERMISSIONS_REQUEST_CODE:
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    loadOpenCV();
+                } else {
+                    showToast("Permission required!", Toast.LENGTH_LONG);
+                    finish();
+                }
         }
     }
 
@@ -489,12 +561,12 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
         super.onStart();
         // Read threshold values
         float progress = prefs.getFloat("faceThreshold", -1);
-//        if (progress != -1)
-//            mThresholdFace.setProgress(progress);
-//        progress = prefs.getFloat("distanceThreshold", -1);
-//        if (progress != -1)
-//            mThresholdDistance.setProgress(progress);
-//        mMaximumImages.setProgress(prefs.getInt("maximumImages", 25)); // Use 25 images by default
+        if (progress != -1)
+            mThresholdFace.setProgress(progress);
+        progress = prefs.getFloat("distanceThreshold", -1);
+        if (progress != -1)
+            mThresholdDistance.setProgress(progress);
+        mMaximumImages.setProgress(prefs.getInt("maximumImages", 25)); // Use 25 images by default
     }
 
     @Override
@@ -530,23 +602,27 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
-            if (status == LoaderCallbackInterface.SUCCESS) {
-                NativeMethods.loadNativeLibraries(); // Load native libraries after(!) OpenCV initialization
-                Log.i(TAG, "OpenCV loaded successfully");
-                mOpenCvCameraView.enableView();
+            switch (status) {
+                case LoaderCallbackInterface.SUCCESS:
+                    NativeMethods.loadNativeLibraries(); // Load native libraries after(!) OpenCV initialization
+                    Log.i(TAG, "OpenCV loaded successfully");
+                    mOpenCvCameraView.enableView();
 
-                // Read images and labels from shared preferences
-                images = tinydb.getListMat("images");
-                imagesLabels = tinydb.getListString("imagesLabels");
+                    // Read images and labels from shared preferences
+                    images = tinydb.getListMat("images");
+                    imagesLabels = tinydb.getListString("imagesLabels");
 
-                Log.i(TAG, "Number of images: " + images.size() + ". Number of labels: " + imagesLabels.size());
-                if (!images.isEmpty()) {
-                    trainFaces(); // Train images after they are loaded
-                    Log.i(TAG, "Images height: " + images.get(0).height() + " Width: " + images.get(0).width() + " total: " + images.get(0).total());
-                }
-                Log.i(TAG, "Labels: " + imagesLabels);
-            } else {
-                super.onManagerConnected(status);
+                    Log.i(TAG, "Number of images: " + images.size()  + ". Number of labels: " + imagesLabels.size());
+                    if (!images.isEmpty()) {
+                        trainFaces(); // Train images after they are loaded
+                        Log.i(TAG, "Images height: " + images.get(0).height() + " Width: " + images.get(0).width() + " total: " + images.get(0).total());
+                    }
+                    Log.i(TAG, "Labels: " + imagesLabels);
+
+                    break;
+                default:
+                    super.onManagerConnected(status);
+                    break;
             }
         }
     };
@@ -675,12 +751,43 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
         return true;
     }
 
+    private void flipCameraAnimation() {
+        // Flip the camera
+        mOpenCvCameraView.flipCamera();
+
+        // Do flip camera animation
+        View v = mToolbar.findViewById(R.id.flip_camera);
+        ObjectAnimator animator = ObjectAnimator.ofFloat(v, "rotationY", v.getRotationY() + 180.0f);
+        animator.setDuration(500);
+        animator.addListener(new Animator.AnimatorListener() {
+            @Override
+            public void onAnimationStart(Animator animation) {
+
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                supportInvalidateOptionsMenu(); // This will call onCreateOptionsMenu()
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+
+            }
+
+            @Override
+            public void onAnimationRepeat(Animator animation) {
+
+            }
+        });
+        animator.start();
+    }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.flip_camera:
-//                flipCameraAnimation();
+                flipCameraAnimation();
                 return true;
         }
         return super.onOptionsItemSelected(item);

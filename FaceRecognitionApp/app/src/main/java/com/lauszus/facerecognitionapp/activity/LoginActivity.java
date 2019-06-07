@@ -20,6 +20,7 @@ import android.widget.Toast;
 
 import com.lauszus.facerecognitionapp.FaceRecognitionAppActivity;
 import com.lauszus.facerecognitionapp.R;
+import com.lauszus.facerecognitionapp.util.PreferencesMap;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -27,8 +28,9 @@ public class LoginActivity extends AppCompatActivity {
     protected EditText edtPassword;
 
     protected TextView txtForgotPassword;
+    private SharedPreferences sharedPreferences;
 
-    protected SharedPreferences sp;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,6 +66,7 @@ public class LoginActivity extends AppCompatActivity {
     private void initFields(){
         edtUser = findViewById(R.id.edtUser);
         edtPassword = findViewById(R.id.edtPassword);
+        sharedPreferences = PreferencesMap.getSharedPreferences(this);
     }
 
     private boolean validateFields(String... values){
@@ -85,10 +88,8 @@ public class LoginActivity extends AppCompatActivity {
      * @return
      */
     private Class isFirstLogin(String username, String password){
-        SharedPreferences sharedPreferences = getApplicationContext()
-                .getSharedPreferences("cgponto", Context.MODE_PRIVATE);
 
-        if(!sharedPreferences.getBoolean(username, Boolean.FALSE)){
+        if(!this.sharedPreferences.getBoolean(username, Boolean.FALSE)){
             setFirstLoginStatus(username, password);
             return FaceRecognitionAppActivity.class;
         } else {
@@ -108,9 +109,7 @@ public class LoginActivity extends AppCompatActivity {
      * @param username username used as key and value to the SharedPreferences
      */
     private void setFirstLoginStatus(String username, String password){
-        SharedPreferences sharedPreferences = getApplicationContext()
-                .getSharedPreferences("cgponto", Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
+        SharedPreferences.Editor editor = this.sharedPreferences.edit();
         editor.putBoolean(username, Boolean.FALSE);
         editor.putString(password, username);
         editor.apply();

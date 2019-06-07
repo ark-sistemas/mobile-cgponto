@@ -10,7 +10,6 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.lauszus.facerecognitionapp.R;
-import com.lauszus.facerecognitionapp.email.SendEmail;
 
 public class ForgotPasswdActivity extends AppCompatActivity {
 
@@ -29,9 +28,6 @@ public class ForgotPasswdActivity extends AppCompatActivity {
         final String SUBJECT = "Teste de e-mail do app CG Ponto";
         final String MSG = "Essa é uma mensagem de teste para o envio de e-mail pelo app CG Ponto";
 
-        SendEmail se = new SendEmail(this, txtEmailRedef.getText().toString(), SUBJECT, MSG);
-
-        se.execute();
     }
 
 }
