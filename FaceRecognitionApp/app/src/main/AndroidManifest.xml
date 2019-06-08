@@ -21,7 +21,7 @@
 
         <activity android:name=".FaceRecognitionAppActivity"
             android:screenOrientation="fullSensor"
-            android:theme="@style/AppTheme.NoActionBar"/>
+            android:theme="@style/AppBase"/>
 
         <activity android:name=".activity.LoginActivity"
             android:theme="@style/AppBase"/>

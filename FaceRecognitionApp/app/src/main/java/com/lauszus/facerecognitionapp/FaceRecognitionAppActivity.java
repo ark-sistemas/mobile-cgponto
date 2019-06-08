@@ -425,28 +425,27 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                 if (mGray.total() == 0)
                     return;
 
-                Mat image = new Mat();
 
-                    // Scale image in order to decrease computation time and make the image square,
-                    // so it does not crash on phones with different aspect ratios for the front
-                    // and back camera
-                    Size imageSize = new Size(200, 200);
-                    Imgproc.resize(mGray, mGray, imageSize);
-                    Log.i(TAG, "Small gray height: " + mGray.height() + " Width: " + mGray.width() + " total: " + mGray.total());
-                    //SaveImage(mGray);
+                // Scale image in order to decrease computation time and make the image square,
+                // so it does not crash on phones with different aspect ratios for the front
+                // and back camera
+                Size imageSize = new Size(200, 200);
+                Imgproc.resize(mGray, mGray, imageSize);
+                Log.i(TAG, "Small gray height: " + mGray.height() + " Width: " + mGray.width() + " total: " + mGray.total());
+                //SaveImage(mGray);
 
-                    image = mGray.reshape(0, (int) mGray.total()); // Create column vector
-                    Log.i(TAG, "Vector height: " + image.height() + " Width: " + image.width() + " total: " + image.total());
-                    images.add(image); // Add current image to the array
+                Mat image = mGray.reshape(0, (int) mGray.total()); // Create column vector
+                Log.i(TAG, "Vector height: " + image.height() + " Width: " + image.width() + " total: " + image.total());
+                images.add(image); // Add current image to the array
 
-                    if (images.size() > maximumImages) {
-                        images.remove(0); // Remove first image
-                        imagesLabels.remove(0); // Remove first label
-                        Log.i(TAG, "The number of images is limited to: " + images.size());
-                    }
+                if (images.size() > maximumImages) {
+                    images.remove(0); // Remove first image
+                    imagesLabels.remove(0); // Remove first label
+                    Log.i(TAG, "The number of images is limited to: " + images.size());
+                }
 
                 if(!mySharedPrefs.getBoolean("Rodrigo", Boolean.TRUE)) {
-                    if(mySharedPrefs.getInt("photoNumber", 0) == 2){
+                    if(mySharedPrefs.getInt("photoNumber", 0) == 3){
                         Editor editor = mySharedPrefs.edit();
                         editor.putBoolean("Rodrigo", Boolean.TRUE);
                         editor.apply();
@@ -461,7 +460,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                         mMeasureDistTask = new NativeMethods.MeasureDistTask(useEigenfaces, measureDistTaskCallback);
                         mMeasureDistTask.execute(image);
                         addUser();
-                        setPhotoNumber(++photoNumber);
+                        setPhotoNumber(photoNumber++);
                     }
                 } else {
                     // Calculate normalized Euclidean distance
@@ -510,7 +509,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
             if (minDist != -1) {
                 int minIndex = bundle.getInt(NativeMethods.MeasureDistTask.MIN_DIST_INDEX_INT);
                 float faceDist = bundle.getFloat(NativeMethods.MeasureDistTask.DIST_FACE_FLOAT);
-                if (imagesLabels.size() > minIndex) { // Just to be sure
+                if (imagesLabels.size() > minIndex && mySharedPrefs.getInt("photoNumber", 0) == 4) { // Just to be sure
                     Log.i(TAG, "dist[" + minIndex + "]: " + minDist + ", face dist: " + faceDist + ", label: " + imagesLabels.get(minIndex));
 
                     String minDistString = String.format(Locale.US, "%.4f", minDist);
@@ -528,7 +527,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
             } else {
                 Log.w(TAG, "Array is null");
                 if (useEigenfaces || uniqueLabels == null || uniqueLabels.length > 1)
-                    showToast("Keep training...", Toast.LENGTH_SHORT);
+                    showToast("Treinando...", Toast.LENGTH_SHORT);
                 else
                     showToast("Fisherfaces needs two different faces", Toast.LENGTH_SHORT);
             }

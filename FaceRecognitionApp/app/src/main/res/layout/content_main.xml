@@ -18,15 +18,14 @@
 
         <Button
             android:id="@+id/take_picture_button"
-            style="?metaButtonBarButtonStyle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:paddingTop="20dp"
             android:paddingBottom="20dp"
-            android:background="@color/black_overlay"
-            android:textColor="@android:color/white"
-            android:text="@string/picture_button" />
+            android:background="@drawable/btn_rounded"
+            android:textColor="@color/buttonTextColor"
+            android:text="@string/btn_pic" />
 
     </LinearLayout>
 
