@@ -93,7 +93,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
     private Mat mRgba, mGray;
     private Toast mToast;
     private boolean useEigenfaces;
-    private SeekBarArrows mThresholdFace, mThresholdDistance, mMaximumImages;
+//    private SeekBarArrows mThresholdFace, mThresholdDistance, mMaximumImages;
     private float faceThreshold, distanceThreshold;
     private int maximumImages;
     private SharedPreferences prefs;
@@ -314,96 +314,94 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         setContentView(R.layout.activity_face_recognition_app);
-        mToolbar = (Toolbar) findViewById(R.id.toolbar);
+        mToolbar = findViewById(R.id.toolbar);
         setSupportActionBar(mToolbar); // Sets the Toolbar to act as the ActionBar for this Activity window
         mySharedPrefs = PreferencesMap.getSharedPreferences(this);
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawer, mToolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
-        final RadioButton mRadioButtonEigenfaces =  findViewById(R.id.eigenfaces);
-        final RadioButton mRadioButtonFisherfaces = findViewById(R.id.fisherfaces);
+//        final RadioButton mRadioButtonEigenfaces =  findViewById(R.id.eigenfaces);
+//        final RadioButton mRadioButtonFisherfaces = findViewById(R.id.fisherfaces);
 
-        mRadioButtonEigenfaces.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                useEigenfaces = true;
-                if (!trainFaces()) {
-                    useEigenfaces = false; // Set variable back
-                    showToast("Still training...", Toast.LENGTH_SHORT);
-                    mRadioButtonEigenfaces.setChecked(useEigenfaces);
-                    mRadioButtonFisherfaces.setChecked(!useEigenfaces);
-                }
-            }
-        });
-        mRadioButtonFisherfaces.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                useEigenfaces = false;
-                if (!trainFaces()) {
-                    useEigenfaces = true; // Set variable back
-                    showToast("Still training...", Toast.LENGTH_SHORT);
-                    mRadioButtonEigenfaces.setChecked(useEigenfaces);
-                    mRadioButtonFisherfaces.setChecked(!useEigenfaces);
-                }
-            }
-        });
+//        mRadioButtonEigenfaces.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                useEigenfaces = true;
+//                if (!trainFaces()) {
+//                    useEigenfaces = false; // Set variable back
+//                    showToast("Still training...", Toast.LENGTH_SHORT);
+//                    mRadioButtonEigenfaces.setChecked(useEigenfaces);
+//                    mRadioButtonFisherfaces.setChecked(!useEigenfaces);
+//                }
+//            }
+//        });
+//        mRadioButtonFisherfaces.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                useEigenfaces = false;
+//                if (!trainFaces()) {
+//                    useEigenfaces = true; // Set variable back
+//                    showToast("Still training...", Toast.LENGTH_SHORT);
+//                    mRadioButtonEigenfaces.setChecked(useEigenfaces);
+//                    mRadioButtonFisherfaces.setChecked(!useEigenfaces);
+//                }
+//            }
+//        });
 
         // Set radio button based on value stored in shared preferences
         prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        useEigenfaces = prefs.getBoolean("useEigenfaces", false);
-        mRadioButtonEigenfaces.setChecked(useEigenfaces);
-        mRadioButtonFisherfaces.setChecked(!useEigenfaces);
+        useEigenfaces = true;
+//        useEigenfaces = prefs.getBoolean("useEigenfaces", false);
+//        mRadioButtonEigenfaces.setChecked(useEigenfaces);
+//        mRadioButtonFisherfaces.setChecked(!useEigenfaces);
 
         tinydb = new TinyDB(this); // Used to store ArrayLists in the shared preferences
 
-        mThresholdFace = (SeekBarArrows) findViewById(R.id.threshold_face);
-        mThresholdFace.setOnSeekBarArrowsChangeListener(new SeekBarArrows.OnSeekBarArrowsChangeListener() {
-            @Override
-            public void onProgressChanged(float progress) {
-                Log.i(TAG, "Face threshold: " + mThresholdFace.progressToString(progress));
-                faceThreshold = progress;
-            }
-        });
-        faceThreshold = mThresholdFace.getProgress(); // Get initial value
+//        mThresholdFace = findViewById(R.id.threshold_face);
+//        mThresholdFace.setOnSeekBarArrowsChangeListener(new SeekBarArrows.OnSeekBarArrowsChangeListener() {
+//            @Override
+//            public void onProgressChanged(float progress) {
+//                Log.i(TAG, "Face threshold: " + mThresholdFace.progressToString(progress));
+//                faceThreshold = progress;
+//            }
+//        });
+        faceThreshold = 0.130f; // Get initial value
+//        faceThreshold = mThresholdFace.getProgress(); // Get initial value
 
-        mThresholdDistance = (SeekBarArrows) findViewById(R.id.threshold_distance);
-        mThresholdDistance.setOnSeekBarArrowsChangeListener(new SeekBarArrows.OnSeekBarArrowsChangeListener() {
-            @Override
-            public void onProgressChanged(float progress) {
-                Log.i(TAG, "Distance threshold: " + mThresholdDistance.progressToString(progress));
-                distanceThreshold = progress;
-            }
-        });
-        distanceThreshold = mThresholdDistance.getProgress(); // Get initial value
+//        mThresholdDistance = findViewById(R.id.threshold_distance);
+//        mThresholdDistance.setOnSeekBarArrowsChangeListener(new SeekBarArrows.OnSeekBarArrowsChangeListener() {
+//            @Override
+//            public void onProgressChanged(float progress) {
+//                Log.i(TAG, "Distance threshold: " + mThresholdDistance.progressToString(progress));
+//                distanceThreshold = progress;
+//            }
+//        });
+        distanceThreshold = 130.0f; // Get initial value
+//        distanceThreshold = mThresholdDistance.getProgress(); // Get initial value
 
-        mMaximumImages = (SeekBarArrows) findViewById(R.id.maximum_images);
-        mMaximumImages.setOnSeekBarArrowsChangeListener(new SeekBarArrows.OnSeekBarArrowsChangeListener() {
-            @Override
-            public void onProgressChanged(float progress) {
-                Log.i(TAG, "Maximum number of images: " + mMaximumImages.progressToString(progress));
-                maximumImages = (int)progress;
-                if (images != null && images.size() > maximumImages) {
-                    int nrRemoveImages = images.size() - maximumImages;
-                    Log.i(TAG, "Removed " + nrRemoveImages + " images from the list");
-                    images.subList(0, nrRemoveImages).clear(); // Remove oldest images
-                    imagesLabels.subList(0, nrRemoveImages).clear(); // Remove oldest labels
-                    trainFaces(); // Retrain faces
-                }
-            }
-        });
-        maximumImages = (int)mMaximumImages.getProgress(); // Get initial value
+//        mMaximumImages = findViewById(R.id.maximum_images);
+//        mMaximumImages.setOnSeekBarArrowsChangeListener(progress -> {
+//            Log.i(TAG, "Maximum number of images: " + mMaximumImages.progressToString(progress));
+//            maximumImages = (int)progress;
+//            if (images != null && images.size() > maximumImages) {
+//                int nrRemoveImages = images.size() - maximumImages;
+//                Log.i(TAG, "Removed " + nrRemoveImages + " images from the list");
+//                images.subList(0, nrRemoveImages).clear(); // Remove oldest images
+//                imagesLabels.subList(0, nrRemoveImages).clear(); // Remove oldest labels
+//                trainFaces(); // Retrain faces
+//            }
+//        });
+        maximumImages = 50; // Get initial value
+//        maximumImages = (int)mMaximumImages.getProgress(); // Get initial value
 
-        findViewById(R.id.clear_button).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.i(TAG, "Cleared training set");
-                images.clear(); // Clear both arrays, when new instance is created
-                imagesLabels.clear();
-                showToast("Training set cleared", Toast.LENGTH_SHORT);
-            }
-        });
+//        findViewById(R.id.clear_button).setOnClickListener(v -> {
+//            Log.i(TAG, "Cleared training set");
+//            images.clear(); // Clear both arrays, when new instance is created
+//            imagesLabels.clear();
+//            showToast("Training set cleared", Toast.LENGTH_SHORT);
+//        });
 
         findViewById(R.id.take_picture_button).setOnClickListener(new View.OnClickListener() {
             NativeMethods.MeasureDistTask mMeasureDistTask;
@@ -425,28 +423,27 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                 if (mGray.total() == 0)
                     return;
 
-                Mat image = new Mat();
 
-                    // Scale image in order to decrease computation time and make the image square,
-                    // so it does not crash on phones with different aspect ratios for the front
-                    // and back camera
-                    Size imageSize = new Size(200, 200);
-                    Imgproc.resize(mGray, mGray, imageSize);
-                    Log.i(TAG, "Small gray height: " + mGray.height() + " Width: " + mGray.width() + " total: " + mGray.total());
-                    //SaveImage(mGray);
+                // Scale image in order to decrease computation time and make the image square,
+                // so it does not crash on phones with different aspect ratios for the front
+                // and back camera
+                Size imageSize = new Size(200, 200);
+                Imgproc.resize(mGray, mGray, imageSize);
+                Log.i(TAG, "Small gray height: " + mGray.height() + " Width: " + mGray.width() + " total: " + mGray.total());
+                //SaveImage(mGray);
 
-                    image = mGray.reshape(0, (int) mGray.total()); // Create column vector
-                    Log.i(TAG, "Vector height: " + image.height() + " Width: " + image.width() + " total: " + image.total());
-                    images.add(image); // Add current image to the array
+                Mat image = mGray.reshape(0, (int) mGray.total()); // Create column vector
+                Log.i(TAG, "Vector height: " + image.height() + " Width: " + image.width() + " total: " + image.total());
+                images.add(image); // Add current image to the array
 
-                    if (images.size() > maximumImages) {
-                        images.remove(0); // Remove first image
-                        imagesLabels.remove(0); // Remove first label
-                        Log.i(TAG, "The number of images is limited to: " + images.size());
-                    }
+                if (images.size() > maximumImages) {
+                    images.remove(0); // Remove first image
+                    imagesLabels.remove(0); // Remove first label
+                    Log.i(TAG, "The number of images is limited to: " + images.size());
+                }
 
                 if(!mySharedPrefs.getBoolean("Rodrigo", Boolean.TRUE)) {
-                    if(mySharedPrefs.getInt("photoNumber", 0) == 2){
+                    if(mySharedPrefs.getInt("photoNumber", 0) == 3){
                         Editor editor = mySharedPrefs.edit();
                         editor.putBoolean("Rodrigo", Boolean.TRUE);
                         editor.apply();
@@ -476,13 +473,13 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
         final GestureDetector mGestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
             @Override
             public boolean onDown(MotionEvent e) {
-                return true;
+                return false;
             }
             @Override
             public boolean onDoubleTap(MotionEvent e) {
                 // Show flip animation when the camera is flipped due to a double tap
                 flipCameraAnimation();
-                return true;
+                return false;
             }
         });
 
@@ -560,13 +557,13 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
     public void onStart() {
         super.onStart();
         // Read threshold values
-        float progress = prefs.getFloat("faceThreshold", -1);
-        if (progress != -1)
-            mThresholdFace.setProgress(progress);
-        progress = prefs.getFloat("distanceThreshold", -1);
-        if (progress != -1)
-            mThresholdDistance.setProgress(progress);
-        mMaximumImages.setProgress(prefs.getInt("maximumImages", 25)); // Use 25 images by default
+//        float progress = prefs.getFloat("faceThreshold", -1);
+//        if (progress != -1)
+//            mThresholdFace.setProgress(progress);
+//        progress = prefs.getFloat("distanceThreshold", -1);
+//        if (progress != -1)
+//            mThresholdDistance.setProgress(progress);
+//        mMaximumImages.setProgress(prefs.getInt("maximumImages", 25)); // Use 25 images by default
     }
 
     @Override
