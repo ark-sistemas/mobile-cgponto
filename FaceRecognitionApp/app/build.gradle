@@ -1,11 +1,11 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 27
     defaultConfig {
         applicationId 'com.lauszus.facerecognitionapp'
         minSdkVersion 16
-        targetSdkVersion 28
+        targetSdkVersion 27
         versionCode 6
         versionName '1.2.3'
         vectorDrawables.useSupportLibrary = true
@@ -96,8 +96,8 @@ dependencies {
     implementation files('libs/mail.jar')
     implementation fileTree(include: ['*.jar'], dir: 'libs')
 
-    implementation 'com.android.support:appcompat-v7:28.0.0'
-    implementation 'com.android.support:design:28.0.0'
+    implementation 'com.android.support:appcompat-v7:27.0.0'
+    implementation 'com.android.support:design:27.0.0'
     implementation 'com.android.support.constraint:constraint-layout:1.1.3'
     implementation project(':opencv')
 //    implementation project(path: ':openCVLibrary341')
