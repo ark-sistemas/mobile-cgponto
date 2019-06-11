@@ -458,7 +458,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                         mMeasureDistTask = new NativeMethods.MeasureDistTask(useEigenfaces, measureDistTaskCallback);
                         mMeasureDistTask.execute(image);
                         addUser();
-                        setPhotoNumber(++photoNumber);
+                        setPhotoNumber(photoNumber++);
                     }
                 } else {
                     // Calculate normalized Euclidean distance
@@ -507,7 +507,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
             if (minDist != -1) {
                 int minIndex = bundle.getInt(NativeMethods.MeasureDistTask.MIN_DIST_INDEX_INT);
                 float faceDist = bundle.getFloat(NativeMethods.MeasureDistTask.DIST_FACE_FLOAT);
-                if (imagesLabels.size() > minIndex) { // Just to be sure
+                if (imagesLabels.size() > minIndex && mySharedPrefs.getInt("photoNumber", 0) == 4) { // Just to be sure
                     Log.i(TAG, "dist[" + minIndex + "]: " + minDist + ", face dist: " + faceDist + ", label: " + imagesLabels.get(minIndex));
 
                     String minDistString = String.format(Locale.US, "%.4f", minDist);
@@ -525,7 +525,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
             } else {
                 Log.w(TAG, "Array is null");
                 if (useEigenfaces || uniqueLabels == null || uniqueLabels.length > 1)
-                    showToast("Keep training...", Toast.LENGTH_SHORT);
+                    showToast("Treinando...", Toast.LENGTH_SHORT);
                 else
                     showToast("Fisherfaces needs two different faces", Toast.LENGTH_SHORT);
             }
