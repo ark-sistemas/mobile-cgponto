@@ -13,6 +13,8 @@
     <string name="label_initial_date">Data de início</string>
     <string name="label_final_hour">Hora do fim</string>
     <string name="label_final_date">Data do fim</string>
+    <string name="new_game">New Game</string>
+    <string name="help">Help</string>
 
     <string name="label_slide_login">Faça login utilizando seu e-mail cadastrado
     e sua senha…</string>
@@ -32,4 +34,6 @@
     <string name="btn_send">Enviar</string>
     <string name="btn_cancel">Cancelar</string>
     <string name="btn_pic">Tirar foto</string>
+    <string name="btn_register">Registrar Ponto</string>
+    <string name="btn_request">Solicitar Abono</string>
 </resources>

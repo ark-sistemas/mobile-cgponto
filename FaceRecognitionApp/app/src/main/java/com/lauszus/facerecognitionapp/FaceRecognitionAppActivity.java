@@ -367,7 +367,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
 //                faceThreshold = progress;
 //            }
 //        });
-        faceThreshold = 0.130f; // Get initial value
+        faceThreshold = 0.400f; // Get initial value
 //        faceThreshold = mThresholdFace.getProgress(); // Get initial value
 
 //        mThresholdDistance = findViewById(R.id.threshold_distance);
@@ -378,7 +378,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
 //                distanceThreshold = progress;
 //            }
 //        });
-        distanceThreshold = 130.0f; // Get initial value
+        distanceThreshold = 0.150f; // Get initial value
 //        distanceThreshold = mThresholdDistance.getProgress(); // Get initial value
 
 //        mMaximumImages = findViewById(R.id.maximum_images);
@@ -443,7 +443,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                 }
 
                 if(!mySharedPrefs.getBoolean("Rodrigo", Boolean.TRUE)) {
-                    if(mySharedPrefs.getInt("photoNumber", 0) == 3){
+                    if(mySharedPrefs.getInt("photoNumber", 0) == 5){
                         Editor editor = mySharedPrefs.edit();
                         editor.putBoolean("Rodrigo", Boolean.TRUE);
                         editor.apply();
@@ -507,7 +507,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
             if (minDist != -1) {
                 int minIndex = bundle.getInt(NativeMethods.MeasureDistTask.MIN_DIST_INDEX_INT);
                 float faceDist = bundle.getFloat(NativeMethods.MeasureDistTask.DIST_FACE_FLOAT);
-                if (imagesLabels.size() > minIndex && mySharedPrefs.getInt("photoNumber", 0) == 3) { // Just to be sure
+                if (imagesLabels.size() > minIndex && mySharedPrefs.getInt("photoNumber", 0) == 5) { // Just to be sure
                     Log.i(TAG, "dist[" + minIndex + "]: " + minDist + ", face dist: " + faceDist + ", label: " + imagesLabels.get(minIndex));
 
                     String minDistString = String.format(Locale.US, "%.4f", minDist);
@@ -525,7 +525,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
             } else {
                 Log.w(TAG, "Array is null");
                 if (useEigenfaces || uniqueLabels == null || uniqueLabels.length > 1)
-                    showToast("Treinando...", Toast.LENGTH_SHORT);
+                    showToast("Treinando...", Toast.LENGTH_LONG);
                 else
                     showToast("Fisherfaces needs two different faces", Toast.LENGTH_SHORT);
             }

@@ -25,8 +25,6 @@ public class ForgotPasswdActivity extends AppCompatActivity {
 
         txtEmailRedef = findViewById(R.id.txtEmailRedef);
 
-        final String SUBJECT = "Teste de e-mail do app CG Ponto";
-        final String MSG = "Essa é uma mensagem de teste para o envio de e-mail pelo app CG Ponto";
 
     }
 

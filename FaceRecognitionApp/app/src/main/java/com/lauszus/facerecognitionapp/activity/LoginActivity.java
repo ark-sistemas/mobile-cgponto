@@ -20,9 +20,10 @@ import android.widget.Toast;
 
 import com.lauszus.facerecognitionapp.FaceRecognitionAppActivity;
 import com.lauszus.facerecognitionapp.R;
+import com.lauszus.facerecognitionapp.interfaces.FieldInitializer;
 import com.lauszus.facerecognitionapp.util.PreferencesMap;
 
-public class LoginActivity extends AppCompatActivity {
+public class LoginActivity extends AppCompatActivity implements FieldInitializer {
 
     protected EditText edtUser;
     protected EditText edtPassword;
@@ -40,6 +41,13 @@ public class LoginActivity extends AppCompatActivity {
 
     }
 
+    @Override
+    public void initFields(){
+        edtUser = findViewById(R.id.edtUser);
+        edtPassword = findViewById(R.id.edtPassword);
+        sharedPreferences = PreferencesMap.getSharedPreferences(this);
+    }
+
     public void recoverPasswd(View view) {
 
         txtForgotPassword = findViewById(R.id.txtForgotPassword);
@@ -51,9 +59,14 @@ public class LoginActivity extends AppCompatActivity {
     public void login(View view) {
         try {
             if(validateFields(edtUser.getText().toString(), edtPassword.getText().toString())) {
-                Intent i = new Intent(LoginActivity.this,
-                        isFirstLogin(edtUser.getText().toString(), edtPassword.getText().toString()));
-                startActivity(i);
+                boolean firstLogin = isFirstLogin(edtUser.getText().toString(), edtPassword.getText().toString());
+                if(firstLogin) {
+                    Intent i = new Intent(LoginActivity.this, FaceRecognitionAppActivity.class);
+                    startActivity(i);
+                } else {
+                    Intent i = new Intent(LoginActivity.this, TelaPrincipalActivity.class);
+                    startActivity(i);
+                }
             } else{
                 Toast.makeText(this, "Digite o usuário e a senha!", Toast.LENGTH_SHORT).show();
             }
@@ -63,11 +76,7 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
-    private void initFields(){
-        edtUser = findViewById(R.id.edtUser);
-        edtPassword = findViewById(R.id.edtPassword);
-        sharedPreferences = PreferencesMap.getSharedPreferences(this);
-    }
+
 
     private boolean validateFields(String... values){
         for (String value : values) {
@@ -87,14 +96,14 @@ public class LoginActivity extends AppCompatActivity {
      * @param username
      * @return
      */
-    private Class isFirstLogin(String username, String password){
+    private boolean isFirstLogin(String username, String password){
 
         if(!this.sharedPreferences.getBoolean(username, Boolean.FALSE)){
             setFirstLoginStatus(username, password);
-            return FaceRecognitionAppActivity.class;
+            return true;
         } else {
 //            Toast.makeText(this, "Não é a primeira", Toast.LENGTH_SHORT).show();
-            return FaceRecognitionAppActivity.class;
+            return false;
         }
     }
 
@@ -107,6 +116,7 @@ public class LoginActivity extends AppCompatActivity {
      * define when his face will be used to train and when will be used just the recognition
      *
      * @param username username used as key and value to the SharedPreferences
+     * @param password used as key
      */
     private void setFirstLoginStatus(String username, String password){
         SharedPreferences.Editor editor = this.sharedPreferences.edit();
