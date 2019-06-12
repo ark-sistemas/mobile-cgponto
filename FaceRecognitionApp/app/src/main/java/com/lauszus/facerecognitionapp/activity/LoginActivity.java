@@ -61,11 +61,12 @@ public class LoginActivity extends AppCompatActivity implements FieldInitializer
             if(validateFields(edtUser.getText().toString(), edtPassword.getText().toString())) {
                 boolean firstLogin = isFirstLogin(edtUser.getText().toString(), edtPassword.getText().toString());
                 if(firstLogin) {
+//                    Intent i = new Intent(LoginActivity.this, TelaPrincipalActivity.class);
                     Intent i = new Intent(LoginActivity.this, FaceRecognitionAppActivity.class);
                     startActivity(i);
                 } else {
-                    Intent i = new Intent(LoginActivity.this, TelaPrincipalActivity.class);
-                    startActivity(i);
+                    Intent in = new Intent(LoginActivity.this, TelaPrincipalActivity.class);
+                    startActivity(in);
                 }
             } else{
                 Toast.makeText(this, "Digite o usuário e a senha!", Toast.LENGTH_SHORT).show();
