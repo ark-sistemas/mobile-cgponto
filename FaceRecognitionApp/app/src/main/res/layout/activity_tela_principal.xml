@@ -8,17 +8,7 @@
     android:orientation="vertical"
     tools:context=".activity.TelaPrincipalActivity"
     android:background="@color/backgroundColor">
-
-    <menu xmlns:android="http://schemas.android.com/apk/res/android">
-        <item android:id="@+id/new_game"
-            android:icon="@drawable/ic_new_game"
-            android:title="@string/new_game"
-            android:showAsAction="ifRoom"/>
-        <item android:id="@+id/help"
-            android:icon="@drawable/ic_help"
-            android:title="@string/help" />
-    </menu>
-
+    
     <Button
         android:id="@+id/menu_mapa"
         android:layout_width="152dp"
