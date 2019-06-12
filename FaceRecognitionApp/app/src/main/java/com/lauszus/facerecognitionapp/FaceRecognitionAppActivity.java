@@ -62,6 +62,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.lauszus.facerecognitionapp.activity.LoginActivity;
+import com.lauszus.facerecognitionapp.activity.TelaPrincipalActivity;
 import com.lauszus.facerecognitionapp.util.PreferencesMap;
 
 import org.opencv.android.BaseLoaderCallback;
@@ -116,7 +117,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
 
         String user = mySharedPrefs.getString("123456", "");
         //        String label = string.substring(0, 1).toUpperCase(Locale.US) + string.substring(1).trim().toLowerCase(Locale.US); // Make sure that the name is always uppercase and rest is lowercase
-        if (user == null || user.isEmpty()) {
+        if (user.isEmpty()) {
             showToast("Usuário não existente", Toast.LENGTH_LONG);
             finish();
             return;
@@ -367,7 +368,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
 //                faceThreshold = progress;
 //            }
 //        });
-        faceThreshold = 0.400f; // Get initial value
+        faceThreshold = 0.095f; // Get initial value
 //        faceThreshold = mThresholdFace.getProgress(); // Get initial value
 
 //        mThresholdDistance = findViewById(R.id.threshold_distance);
@@ -378,7 +379,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
 //                distanceThreshold = progress;
 //            }
 //        });
-        distanceThreshold = 0.150f; // Get initial value
+        distanceThreshold = 0.090f; // Get initial value
 //        distanceThreshold = mThresholdDistance.getProgress(); // Get initial value
 
 //        mMaximumImages = findViewById(R.id.maximum_images);
@@ -437,28 +438,29 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                 images.add(image); // Add current image to the array
 
                 if (images.size() > maximumImages) {
-                    images.remove(0); // Remove first image
-                    imagesLabels.remove(0); // Remove first label
+                    images.remove(maximumImages - 1); // Remove first image
+                    imagesLabels.remove(maximumImages - 1); // Remove first label
                     Log.i(TAG, "The number of images is limited to: " + images.size());
                 }
 
                 if(!mySharedPrefs.getBoolean("Rodrigo", Boolean.TRUE)) {
-                    if(mySharedPrefs.getInt("photoNumber", 0) == 5){
+                    if(mySharedPrefs.getInt("photoNumber", 0) == 4){
                         Editor editor = mySharedPrefs.edit();
                         editor.putBoolean("Rodrigo", Boolean.TRUE);
                         editor.apply();
+                        Toast.makeText(FaceRecognitionAppActivity.this,
+                                "Treinamento completo!", Toast.LENGTH_SHORT).show();
                         new Handler().postDelayed(() -> {
-                            Toast.makeText(FaceRecognitionAppActivity.this,
-                                    "Treinamento completo!", Toast.LENGTH_SHORT).show();
                             startActivity(new Intent(FaceRecognitionAppActivity.this,
-                                    LoginActivity.class));
+                                    TelaPrincipalActivity.class));
                             finish();
-                        }, 2000);
+                        }, 1000);
                     } else {
                         mMeasureDistTask = new NativeMethods.MeasureDistTask(useEigenfaces, measureDistTaskCallback);
                         mMeasureDistTask.execute(image);
                         addUser();
-                        setPhotoNumber(photoNumber++);
+                        setPhotoNumber(photoNumber);
+                        photoNumber++;
                     }
                 } else {
                     // Calculate normalized Euclidean distance
@@ -507,20 +509,21 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
             if (minDist != -1) {
                 int minIndex = bundle.getInt(NativeMethods.MeasureDistTask.MIN_DIST_INDEX_INT);
                 float faceDist = bundle.getFloat(NativeMethods.MeasureDistTask.DIST_FACE_FLOAT);
-                if (imagesLabels.size() > minIndex && mySharedPrefs.getInt("photoNumber", 0) == 5) { // Just to be sure
+                if (imagesLabels.size() > minIndex) { // Just to be sure
                     Log.i(TAG, "dist[" + minIndex + "]: " + minDist + ", face dist: " + faceDist + ", label: " + imagesLabels.get(minIndex));
 
                     String minDistString = String.format(Locale.US, "%.4f", minDist);
                     String faceDistString = String.format(Locale.US, "%.4f", faceDist);
 
-                    if (faceDist < faceThreshold && minDist < distanceThreshold) // 1. Near face space and near a face class
-                        showToast("Face detected: " + imagesLabels.get(minIndex) + ". Distance: " + minDistString, Toast.LENGTH_LONG);
+                    if (faceDist < faceThreshold && minDist < distanceThreshold
+                            && mySharedPrefs.getInt("photoNumber", 0) == 4) // 1. Near face space and near a face class
+                        showToast("Face detectada: " + imagesLabels.get(minIndex) + ". Distance: " + minDistString, Toast.LENGTH_LONG);
                     else if (faceDist < faceThreshold) // 2. Near face space but not near a known face class
-                        showToast("Unknown face. Face distance: " + faceDistString + ". Closest Distance: " + minDistString, Toast.LENGTH_LONG);
+                        showToast("Face desconhecida. Distância da Face: " + faceDistString + ". Closest Distance: " + minDistString, Toast.LENGTH_LONG);
                     else if (minDist < distanceThreshold) // 3. Distant from face space and near a face class
-                        showToast("False recognition. Face distance: " + faceDistString + ". Closest Distance: " + minDistString, Toast.LENGTH_LONG);
+                        showToast("Reconhecimento falso. Face distance: " + faceDistString + ". Closest Distance: " + minDistString, Toast.LENGTH_LONG);
                     else // 4. Distant from face space and not near a known face class.
-                        showToast("Image is not a face. Face distance: " + faceDistString + ". Closest Distance: " + minDistString, Toast.LENGTH_LONG);
+                        showToast("Não há uma face na foto. Face distance: " + faceDistString + ". Closest Distance: " + minDistString, Toast.LENGTH_LONG);
                 }
             } else {
                 Log.w(TAG, "Array is null");

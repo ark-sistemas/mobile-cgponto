@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 
+import com.lauszus.facerecognitionapp.FaceRecognitionAppActivity;
 import com.lauszus.facerecognitionapp.R;
 import com.lauszus.facerecognitionapp.interfaces.FieldInitializer;
 
@@ -22,6 +23,7 @@ public class TelaPrincipalActivity extends AppCompatActivity  {
 
 
     public void register(View view) {
-        Intent intent = new Intent(TelaPrincipalActivity.this, MapaActivity.class);
+        Intent intent = new Intent(TelaPrincipalActivity.this, FaceRecognitionAppActivity.class);
+        startActivity(intent);
     }
 }
