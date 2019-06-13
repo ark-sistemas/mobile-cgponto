@@ -9,7 +9,7 @@ public class APIClient {
 
     private final static String ENDPOINT = "http://192.168.43.56:8089";
 
-    public static Retrofit getClient(){
+    public static Retrofit getClient(final String path){
 
         Retrofit retrofit;
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
@@ -17,7 +17,7 @@ public class APIClient {
         OkHttpClient httpClient = new OkHttpClient.Builder().addInterceptor(interceptor).build();
 
         retrofit = new Retrofit.Builder()
-                .baseUrl(ENDPOINT.concat("/usuario/"))
+                .baseUrl(ENDPOINT.concat(path))
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(httpClient).build();
 

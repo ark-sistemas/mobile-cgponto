@@ -28,12 +28,14 @@ import android.content.SharedPreferences.Editor;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.GravityCompat;
@@ -63,6 +65,11 @@ import android.widget.Toast;
 
 import com.lauszus.facerecognitionapp.activity.LoginActivity;
 import com.lauszus.facerecognitionapp.activity.TelaPrincipalActivity;
+import com.lauszus.facerecognitionapp.bootstrap.APIClient;
+import com.lauszus.facerecognitionapp.interfaces.FieldInitializer;
+import com.lauszus.facerecognitionapp.model.RegistroPonto;
+import com.lauszus.facerecognitionapp.resource.RegistroPontoResource;
+import com.lauszus.facerecognitionapp.resource.ResourceInterface;
 import com.lauszus.facerecognitionapp.util.PreferencesMap;
 
 import org.opencv.android.BaseLoaderCallback;
@@ -77,6 +84,8 @@ import org.opencv.imgproc.Imgproc;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -84,7 +93,8 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 
-public class FaceRecognitionAppActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
+@RequiresApi(api = Build.VERSION_CODES.O)
+public class FaceRecognitionAppActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2, FieldInitializer {
     private static final String TAG = FaceRecognitionAppActivity.class.getSimpleName();
     private static final int PERMISSIONS_REQUEST_CODE = 0;
     private ArrayList<Mat> images;
@@ -103,6 +113,9 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
     private Toolbar mToolbar;
     private NativeMethods.TrainFacesTask mTrainFacesTask;
     private Integer photoNumber = 0;
+
+    private RegistroPontoResource registroPontoResource;
+    private RegistroPonto registroPonto;
 
     private void showToast(String message, int duration) {
         if (duration != Toast.LENGTH_SHORT && duration != Toast.LENGTH_LONG)
@@ -206,6 +219,15 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
         }
     };
 
+    private void setPhotoNumber(Integer quantity){
+        Editor editor = mySharedPrefs.edit();
+        editor.putInt("photoNumber", quantity);
+        editor.apply();
+    }
+
+
+
+
 //    private void showLabelsDialog() {
 //        Set<String> uniqueLabelsSet = new HashSet<>(imagesLabels); // Get all unique labels
 //        if (!uniqueLabelsSet.isEmpty()) { // Make sure that there are any labels
@@ -300,12 +322,15 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
 //        dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
 //
 //        dialog.show();
+
 //    }
 
-    private void setPhotoNumber(Integer quantity){
-        Editor editor = mySharedPrefs.edit();
-        editor.putInt("photoNumber", quantity);
-        editor.apply();
+    @Override
+    public void initFields(){
+        registroPontoResource = APIClient.getClient("/registro/")
+                .create(RegistroPontoResource.class);
+
+        registroPonto = new RegistroPonto();
     }
 
     @Override
@@ -322,6 +347,8 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawer, mToolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.addDrawerListener(toggle);
         toggle.syncState();
+
+        initFields();
 
 //        final RadioButton mRadioButtonEigenfaces =  findViewById(R.id.eigenfaces);
 //        final RadioButton mRadioButtonFisherfaces = findViewById(R.id.fisherfaces);
@@ -497,7 +524,10 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
         });
     }
 
+
+
     private NativeMethods.MeasureDistTask.Callback measureDistTaskCallback = new NativeMethods.MeasureDistTask.Callback() {
+
         @Override
         public void onMeasureDistComplete(Bundle bundle) {
             if (bundle == null) {
@@ -516,8 +546,14 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                     String faceDistString = String.format(Locale.US, "%.4f", faceDist);
 
                     if (faceDist < faceThreshold && minDist < distanceThreshold
-                            && mySharedPrefs.getInt("photoNumber", 0) == 4) // 1. Near face space and near a face class
+                            && mySharedPrefs.getInt("photoNumber", 0) == 4) { // 1. Near face space and near a face class
+                        findViewById(R.id.take_picture_button).setEnabled(false);
+                        LocalDateTime ldt = LocalDateTime.now();
+                        Date dateHour = new Date();
+                        registroPonto.setData(new SimpleDateFormat("dd/MM/AAAA", Locale.ROOT).format(dateHour));
+
                         showToast("Face detectada: " + imagesLabels.get(minIndex) + ". Distance: " + minDistString, Toast.LENGTH_LONG);
+                    }
                     else if (faceDist < faceThreshold) // 2. Near face space but not near a known face class
                         showToast("Face desconhecida. Distância da Face: " + faceDistString + ". Closest Distance: " + minDistString, Toast.LENGTH_LONG);
                     else if (minDist < distanceThreshold) // 3. Distant from face space and near a face class

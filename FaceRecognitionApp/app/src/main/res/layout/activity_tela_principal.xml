@@ -34,17 +34,4 @@
         tools:layout_editor_absoluteY="280dp"
         android:onClick="register"/>
 
-    <Button
-        android:id="@+id/btn_request"
-        android:layout_width="164dp"
-        android:layout_height="70dp"
-        android:background="@drawable/btn_rounded"
-        android:fontFamily="sans-serif-condensed-medium"
-        android:text="@string/btn_request"
-        android:textColor="@color/buttonTextColor"
-        app:layout_constraintEnd_toEndOf="parent"
-        tools:layout_editor_absoluteY="376dp" />
-
-
-
 </LinearLayout>
