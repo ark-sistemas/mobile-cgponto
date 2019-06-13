@@ -86,6 +86,7 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -109,6 +110,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
     private int maximumImages;
     private SharedPreferences prefs;
     private SharedPreferences mySharedPrefs;
+    private SharedPreferences.Editor editor;
     private TinyDB tinydb;
     private Toolbar mToolbar;
     private NativeMethods.TrainFacesTask mTrainFacesTask;
@@ -225,8 +227,19 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
         editor.apply();
     }
 
-
-
+//    private void setEntries(){
+//        SharedPreferences.Editor editor = this.mySharedPrefs.edit();
+//        LocalDateTime ldt = LocalDateTime.now();
+//        if(this.mySharedPrefs.getBoolean(ldt.format(DateTimeFormatter.ofPattern("dd/MM/YYYY")), Boolean)){
+//
+//        }
+//        editor.putBoolean(ldt.format(DateTimeFormatter.ofPattern("dd/MM/YYYY")), Boolean.FALSE);
+//        editor.putBoolean("firstEntry", Boolean.FALSE);
+//        editor.putBoolean("firstExit", Boolean.FALSE);
+//        editor.putBoolean("secondEntry", Boolean.FALSE);
+//        editor.putBoolean("secondExit", Boolean.FALSE);
+//        editor.apply();
+//    }
 
 //    private void showLabelsDialog() {
 //        Set<String> uniqueLabelsSet = new HashSet<>(imagesLabels); // Get all unique labels
@@ -331,6 +344,8 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                 .create(RegistroPontoResource.class);
 
         registroPonto = new RegistroPonto();
+
+
     }
 
     @Override
@@ -350,86 +365,14 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
 
         initFields();
 
-//        final RadioButton mRadioButtonEigenfaces =  findViewById(R.id.eigenfaces);
-//        final RadioButton mRadioButtonFisherfaces = findViewById(R.id.fisherfaces);
-
-//        mRadioButtonEigenfaces.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                useEigenfaces = true;
-//                if (!trainFaces()) {
-//                    useEigenfaces = false; // Set variable back
-//                    showToast("Still training...", Toast.LENGTH_SHORT);
-//                    mRadioButtonEigenfaces.setChecked(useEigenfaces);
-//                    mRadioButtonFisherfaces.setChecked(!useEigenfaces);
-//                }
-//            }
-//        });
-//        mRadioButtonFisherfaces.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                useEigenfaces = false;
-//                if (!trainFaces()) {
-//                    useEigenfaces = true; // Set variable back
-//                    showToast("Still training...", Toast.LENGTH_SHORT);
-//                    mRadioButtonEigenfaces.setChecked(useEigenfaces);
-//                    mRadioButtonFisherfaces.setChecked(!useEigenfaces);
-//                }
-//            }
-//        });
-
-        // Set radio button based on value stored in shared preferences
         prefs = PreferenceManager.getDefaultSharedPreferences(this);
         useEigenfaces = true;
-//        useEigenfaces = prefs.getBoolean("useEigenfaces", false);
-//        mRadioButtonEigenfaces.setChecked(useEigenfaces);
-//        mRadioButtonFisherfaces.setChecked(!useEigenfaces);
 
         tinydb = new TinyDB(this); // Used to store ArrayLists in the shared preferences
 
-//        mThresholdFace = findViewById(R.id.threshold_face);
-//        mThresholdFace.setOnSeekBarArrowsChangeListener(new SeekBarArrows.OnSeekBarArrowsChangeListener() {
-//            @Override
-//            public void onProgressChanged(float progress) {
-//                Log.i(TAG, "Face threshold: " + mThresholdFace.progressToString(progress));
-//                faceThreshold = progress;
-//            }
-//        });
         faceThreshold = 0.095f; // Get initial value
-//        faceThreshold = mThresholdFace.getProgress(); // Get initial value
-
-//        mThresholdDistance = findViewById(R.id.threshold_distance);
-//        mThresholdDistance.setOnSeekBarArrowsChangeListener(new SeekBarArrows.OnSeekBarArrowsChangeListener() {
-//            @Override
-//            public void onProgressChanged(float progress) {
-//                Log.i(TAG, "Distance threshold: " + mThresholdDistance.progressToString(progress));
-//                distanceThreshold = progress;
-//            }
-//        });
         distanceThreshold = 0.090f; // Get initial value
-//        distanceThreshold = mThresholdDistance.getProgress(); // Get initial value
-
-//        mMaximumImages = findViewById(R.id.maximum_images);
-//        mMaximumImages.setOnSeekBarArrowsChangeListener(progress -> {
-//            Log.i(TAG, "Maximum number of images: " + mMaximumImages.progressToString(progress));
-//            maximumImages = (int)progress;
-//            if (images != null && images.size() > maximumImages) {
-//                int nrRemoveImages = images.size() - maximumImages;
-//                Log.i(TAG, "Removed " + nrRemoveImages + " images from the list");
-//                images.subList(0, nrRemoveImages).clear(); // Remove oldest images
-//                imagesLabels.subList(0, nrRemoveImages).clear(); // Remove oldest labels
-//                trainFaces(); // Retrain faces
-//            }
-//        });
         maximumImages = 50; // Get initial value
-//        maximumImages = (int)mMaximumImages.getProgress(); // Get initial value
-
-//        findViewById(R.id.clear_button).setOnClickListener(v -> {
-//            Log.i(TAG, "Cleared training set");
-//            images.clear(); // Clear both arrays, when new instance is created
-//            imagesLabels.clear();
-//            showToast("Training set cleared", Toast.LENGTH_SHORT);
-//        });
 
         findViewById(R.id.take_picture_button).setOnClickListener(new View.OnClickListener() {
             NativeMethods.MeasureDistTask mMeasureDistTask;
@@ -539,19 +482,36 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
             if (minDist != -1) {
                 int minIndex = bundle.getInt(NativeMethods.MeasureDistTask.MIN_DIST_INDEX_INT);
                 float faceDist = bundle.getFloat(NativeMethods.MeasureDistTask.DIST_FACE_FLOAT);
-                if (imagesLabels.size() > minIndex) { // Just to be sure
+                if (imagesLabels.size() > minIndex
+                        && mySharedPrefs.getInt("photoNumber", 0) == 4) { // Just to be sure
                     Log.i(TAG, "dist[" + minIndex + "]: " + minDist + ", face dist: " + faceDist + ", label: " + imagesLabels.get(minIndex));
 
                     String minDistString = String.format(Locale.US, "%.4f", minDist);
                     String faceDistString = String.format(Locale.US, "%.4f", faceDist);
 
-                    if (faceDist < faceThreshold && minDist < distanceThreshold
-                            && mySharedPrefs.getInt("photoNumber", 0) == 4) { // 1. Near face space and near a face class
+                    if (faceDist < faceThreshold && minDist < distanceThreshold) { // 1. Near face space and near a face class
                         findViewById(R.id.take_picture_button).setEnabled(false);
                         LocalDateTime ldt = LocalDateTime.now();
-                        Date dateHour = new Date();
-                        registroPonto.setData(new SimpleDateFormat("dd/MM/AAAA", Locale.ROOT).format(dateHour));
-
+                        registroPonto.setData(ldt.format(DateTimeFormatter.ofPattern("dd/MM/AAAA")));
+                        registroPonto.setEmail(mySharedPrefs.getString("email", ""));
+                        editor = mySharedPrefs.edit();
+                        if(mySharedPrefs.getBoolean(ldt.format(DateTimeFormatter.ofPattern("dd/MM/AAAA")), Boolean.TRUE)) {
+                            if (mySharedPrefs.getBoolean("firstEntry", Boolean.TRUE)) {
+                                editor.putBoolean("firstEntry", Boolean.FALSE);
+                                registroPonto.setPrimeiraEntrada(ldt.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+                            } else if (mySharedPrefs.getBoolean("firstExit", Boolean.TRUE)) {
+                                editor.putBoolean("firstExit", Boolean.FALSE);
+                                registroPonto.setPrimeiraSaida(ldt.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+                            } else if (mySharedPrefs.getBoolean("secondEntry", Boolean.TRUE)) {
+                                editor.putBoolean("secondEntry", Boolean.FALSE);
+                                registroPonto.setSegundaEntrada(ldt.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+                            } else if (mySharedPrefs.getBoolean("secondExit", Boolean.TRUE)) {
+                                editor.putBoolean("secondExit", Boolean.FALSE);
+                                editor.putBoolean(ldt.format(DateTimeFormatter.ofPattern("dd/MM/AAAA")), Boolean.FALSE);
+                                registroPonto.setSegundaSaida(ldt.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+                            }
+                        }
+                        editor.apply();
                         showToast("Face detectada: " + imagesLabels.get(minIndex) + ". Distance: " + minDistString, Toast.LENGTH_LONG);
                     }
                     else if (faceDist < faceThreshold) // 2. Near face space but not near a known face class
