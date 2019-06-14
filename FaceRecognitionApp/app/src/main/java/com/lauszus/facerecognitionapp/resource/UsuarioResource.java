@@ -8,21 +8,16 @@ import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.DELETE;
 import retrofit2.http.GET;
+import retrofit2.http.PATCH;
 import retrofit2.http.POST;
 import retrofit2.http.PUT;
 import retrofit2.http.Path;
 
 public interface UsuarioResource {
 
-    @GET("/posts")
-    Call<List<Usuario>> get();
+    @PUT("/put")
+    Call<Usuario> put(String email); //To change password
 
-    @POST("/posts")
-    Call<Usuario> post(@Body Usuario userPost);
-
-    @PUT("/posts/{id}")
-    Call<Usuario> put(@Body Usuario userPost, @Path("id") Integer id);
-
-    @DELETE("/posts/{id}")
-    Call<Void> delete(@Path("id") Integer id);
+    @PATCH("/usuario")
+    Call<Boolean> patch(@Body Usuario usuario);
 }
