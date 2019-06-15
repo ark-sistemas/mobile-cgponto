@@ -98,7 +98,6 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-@RequiresApi(api = Build.VERSION_CODES.O)
 public class FaceRecognitionAppActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2, FieldInitializer {
     private static final String TAG = FaceRecognitionAppActivity.class.getSimpleName();
     private static final int PERMISSIONS_REQUEST_CODE = 0;
@@ -118,11 +117,11 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
     private TinyDB tinydb;
     private Toolbar mToolbar;
     private NativeMethods.TrainFacesTask mTrainFacesTask;
-    private Integer photoNumber = 0;
+    private Integer photoNumber = 1;
 
     private RegistroPontoResource registroPontoResource;
     private RegistroPonto registroPonto;
-    private LocalDateTime ldt;
+    private Date ldt;
 
     private void showToast(String message, int duration) {
         if (duration != Toast.LENGTH_SHORT && duration != Toast.LENGTH_LONG)
@@ -135,7 +134,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
 
     private void addUser() {
 
-        String user = mySharedPrefs.getString("email", "");
+        String user = mySharedPrefs.getString("emailString", "");
         //        String label = string.substring(0, 1).toUpperCase(Locale.US) + string.substring(1).trim().toLowerCase(Locale.US); // Make sure that the name is always uppercase and rest is lowercase
         if (user.isEmpty()) {
             showToast("Usuário não existente", Toast.LENGTH_LONG);
@@ -258,7 +257,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
         @Override
         public void onMeasureDistComplete(Bundle bundle) {
             if (bundle == null) {
-                showToast("Failed to measure distance", Toast.LENGTH_LONG);
+                showToast("Falha ao medir distância", Toast.LENGTH_LONG);
                 return;
             }
 
@@ -267,7 +266,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                 int minIndex = bundle.getInt(NativeMethods.MeasureDistTask.MIN_DIST_INDEX_INT);
                 float faceDist = bundle.getFloat(NativeMethods.MeasureDistTask.DIST_FACE_FLOAT);
                 if (imagesLabels.size() > minIndex
-                        && mySharedPrefs.getInt("photoNumber", 0) == 4) { // Just to be sure
+                        && mySharedPrefs.getInt("photoNumber", 0) > 6) { // Just to be sure
                     Log.i(TAG, "dist[" + minIndex + "]: " + minDist + ", face dist: " + faceDist + ", label: " + imagesLabels.get(minIndex));
 
                     String minDistString = String.format(Locale.US, "%.4f", minDist);
@@ -277,24 +276,24 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                         findViewById(R.id.take_picture_button).setEnabled(false);
 
                         registroPonto = new RegistroPonto();
-                        registroPonto.setData(ldt.format(DateTimeFormatter.ofPattern("dd/MM/AAAA")));
+                        registroPonto.setData(new SimpleDateFormat("dd/MM/YYYY", Locale.ROOT).format(ldt));
                         registroPonto.setEmail(mySharedPrefs.getString("email", ""));
                         showToast("Face detectada: " + imagesLabels.get(minIndex) + ". Distance: " + minDistString, Toast.LENGTH_LONG);
                         editor = mySharedPrefs.edit();
-                        if(mySharedPrefs.getBoolean(ldt.format(DateTimeFormatter.ofPattern("dd/MM/AAAA")), Boolean.TRUE)) {
+                        if(mySharedPrefs.getBoolean(new SimpleDateFormat("dd/MM/YYYY", Locale.ROOT).format(ldt), Boolean.TRUE)) {
                             if (mySharedPrefs.getBoolean("firstEntry", Boolean.TRUE)) {
                                 editor.putBoolean("firstEntry", Boolean.FALSE);
-                                registroPonto.setPrimeiraEntrada(ldt.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+                                registroPonto.setPrimeiraEntrada(new SimpleDateFormat("HH:mm", Locale.ROOT).format(ldt));
                             } else if (mySharedPrefs.getBoolean("firstExit", Boolean.TRUE)) {
                                 editor.putBoolean("firstExit", Boolean.FALSE);
-                                registroPonto.setPrimeiraSaida(ldt.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+                                registroPonto.setPrimeiraSaida(new SimpleDateFormat("HH:mm", Locale.ROOT).format(ldt));
                             } else if (mySharedPrefs.getBoolean("secondEntry", Boolean.TRUE)) {
                                 editor.putBoolean("secondEntry", Boolean.FALSE);
-                                registroPonto.setSegundaEntrada(ldt.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+                                registroPonto.setSegundaEntrada(new SimpleDateFormat("HH:mm", Locale.ROOT).format(ldt));
                             } else if (mySharedPrefs.getBoolean("secondExit", Boolean.TRUE)) {
                                 editor.putBoolean("secondExit", Boolean.FALSE);
-                                editor.putBoolean(ldt.format(DateTimeFormatter.ofPattern("dd/MM/AAAA")), Boolean.FALSE);
-                                registroPonto.setSegundaSaida(ldt.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+                                editor.putBoolean(new SimpleDateFormat("dd/MM/YYYY", Locale.ROOT).format(ldt), Boolean.FALSE);
+                                registroPonto.setSegundaSaida(new SimpleDateFormat("HH:mm", Locale.ROOT).format(ldt));
                             }
                             sendRegister(registroPonto);
                         } else {
@@ -439,7 +438,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                 .create(RegistroPontoResource.class);
 
         registroPonto = new RegistroPonto();
-        ldt = LocalDateTime.now();
+        ldt = new Date();
         mySharedPrefs = PreferencesMap.getSharedPreferences(this);
     }
 
@@ -465,8 +464,8 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
 
         tinydb = new TinyDB(this); // Used to store ArrayLists in the shared preferences
 
-        faceThreshold = 0.095f; // Get initial value
-        distanceThreshold = 0.090f; // Get initial value
+        faceThreshold = 0.100f; // Get initial value
+        distanceThreshold = 0.110f; // Get initial value
         maximumImages = 50; // Get initial value
 
         findViewById(R.id.take_picture_button).setOnClickListener(new View.OnClickListener() {
@@ -509,7 +508,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                 }
 
                 if(!mySharedPrefs.getBoolean("email", Boolean.TRUE)) {
-                    if(mySharedPrefs.getInt("photoNumber", 0) == 4){
+                    if(mySharedPrefs.getInt("photoNumber", 0) > 6){
                         Editor editor = mySharedPrefs.edit();
                         editor.putBoolean("email", Boolean.TRUE);
                         editor.apply();
@@ -524,8 +523,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                         mMeasureDistTask = new NativeMethods.MeasureDistTask(useEigenfaces, measureDistTaskCallback);
                         mMeasureDistTask.execute(image);
                         addUser();
-                        setPhotoNumber(photoNumber);
-                        photoNumber++;
+                        setPhotoNumber(photoNumber++);
                     }
                 } else {
                     // Calculate normalized Euclidean distance

@@ -40,6 +40,11 @@ public class LoginActivity extends AppCompatActivity implements FieldInitializer
     private Usuario usuario;
 
 
+    /**
+     * TrObLHxE
+     * @param savedInstanceState
+     */
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,7 +99,7 @@ public class LoginActivity extends AppCompatActivity implements FieldInitializer
                         startActivity(in);
                     }
                 } else {
-                    Toast.makeText(LoginActivity.this, "Usuário inexistente",
+                    Toast.makeText(LoginActivity.this, "Usuário inexistente.",
                             Toast.LENGTH_LONG).show();
                 }
             }
@@ -135,7 +140,7 @@ public class LoginActivity extends AppCompatActivity implements FieldInitializer
      */
     private boolean isFirstLogin(String email){
 
-        if(!this.sharedPreferences.getBoolean(email, Boolean.FALSE)){
+        if(!this.sharedPreferences.getBoolean("email", Boolean.FALSE)){
             setFirstLoginStatus(email);
             return true;
         } else {
@@ -145,18 +150,18 @@ public class LoginActivity extends AppCompatActivity implements FieldInitializer
 
     /**
      * After first sign in, is setted as {@code false} in SharedPreferences the status of
-     * that specific user, where his username is used as key to the Map in SharedPreferences.
+     * that specific user, where his email is used as key to the Map in SharedPreferences.
      *
-     * In addition, will be mapped a String using his password as key to his username,
+     * In addition, will be mapped a String using his password as key to his email,
      * like this : putString(hisPassword, hisUsername), where this will be used to
      * define when his face will be used to train and when will be used just the recognition
      *
-     * @param username username used as value to the SharedPreferences
+     * @param email email used as value to the SharedPreferences
      */
-    private void setFirstLoginStatus(String username){
+    private void setFirstLoginStatus(String email){
         SharedPreferences.Editor editor = this.sharedPreferences.edit();
         editor.putBoolean("email", Boolean.FALSE);
-        editor.putString("email", username);
+        editor.putString("emailString", email);
         editor.apply();
     }
 }
