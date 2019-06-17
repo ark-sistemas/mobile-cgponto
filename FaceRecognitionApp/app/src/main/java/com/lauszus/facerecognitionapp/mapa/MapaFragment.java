@@ -35,6 +35,9 @@ public class MapaFragment extends SupportMapFragment implements OnMapReadyCallba
             googleMap.moveCamera(update);
         }
 
+        new Localizador(getContext(), googleMap);
+
+        
     }
 
     private LatLng findCoordenadaAddress(String endereco) {
