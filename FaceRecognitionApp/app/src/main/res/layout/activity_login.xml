@@ -45,6 +45,8 @@
             android:layout_width="337dp"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-condensed-medium"
+            android:inputType="textEmailAddress"
+            android:singleLine="true"
             android:theme="@style/EditTextViewFocus"/>
 
         <TextView
@@ -59,6 +61,7 @@
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-condensed-medium"
             android:inputType="textPassword"
+            android:singleLine="true"
             android:theme="@style/EditTextViewFocus"
             />
 

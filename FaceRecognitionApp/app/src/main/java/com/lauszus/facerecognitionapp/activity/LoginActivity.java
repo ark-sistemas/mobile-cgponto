@@ -49,6 +49,8 @@ public class LoginActivity extends AppCompatActivity implements FieldInitializer
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+
         setContentView(R.layout.activity_login);
         initFields();
 
@@ -163,5 +165,9 @@ public class LoginActivity extends AppCompatActivity implements FieldInitializer
         editor.putBoolean("email", Boolean.FALSE);
         editor.putString("emailString", email);
         editor.apply();
+    }
+
+    private Boolean isLogged(){
+        return sharedPreferences.getBoolean("email", Boolean.FALSE);
     }
 }

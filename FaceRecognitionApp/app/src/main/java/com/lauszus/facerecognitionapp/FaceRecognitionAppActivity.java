@@ -265,44 +265,44 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
             if (minDist != -1) {
                 int minIndex = bundle.getInt(NativeMethods.MeasureDistTask.MIN_DIST_INDEX_INT);
                 float faceDist = bundle.getFloat(NativeMethods.MeasureDistTask.DIST_FACE_FLOAT);
-                if (imagesLabels.size() > minIndex
-                        && mySharedPrefs.getInt("photoNumber", 0) > 6) { // Just to be sure
+                if (imagesLabels.size() > minIndex) { // Just to be sure
                     Log.i(TAG, "dist[" + minIndex + "]: " + minDist + ", face dist: " + faceDist + ", label: " + imagesLabels.get(minIndex));
 
                     String minDistString = String.format(Locale.US, "%.4f", minDist);
                     String faceDistString = String.format(Locale.US, "%.4f", faceDist);
 
                     if (faceDist < faceThreshold && minDist < distanceThreshold) { // 1. Near face space and near a face class
-                        findViewById(R.id.take_picture_button).setEnabled(false);
+//                        findViewById(R.id.take_picture_button).setEnabled(false);
 
-                        registroPonto = new RegistroPonto();
-                        registroPonto.setData(new SimpleDateFormat("dd/MM/YYYY", Locale.ROOT).format(ldt));
-                        registroPonto.setEmail(mySharedPrefs.getString("email", ""));
-                        showToast("Face detectada: " + imagesLabels.get(minIndex) + ". Distance: " + minDistString, Toast.LENGTH_LONG);
-                        editor = mySharedPrefs.edit();
-                        if(mySharedPrefs.getBoolean(new SimpleDateFormat("dd/MM/YYYY", Locale.ROOT).format(ldt), Boolean.TRUE)) {
-                            if (mySharedPrefs.getBoolean("firstEntry", Boolean.TRUE)) {
-                                editor.putBoolean("firstEntry", Boolean.FALSE);
-                                registroPonto.setPrimeiraEntrada(new SimpleDateFormat("HH:mm", Locale.ROOT).format(ldt));
-                            } else if (mySharedPrefs.getBoolean("firstExit", Boolean.TRUE)) {
-                                editor.putBoolean("firstExit", Boolean.FALSE);
-                                registroPonto.setPrimeiraSaida(new SimpleDateFormat("HH:mm", Locale.ROOT).format(ldt));
-                            } else if (mySharedPrefs.getBoolean("secondEntry", Boolean.TRUE)) {
-                                editor.putBoolean("secondEntry", Boolean.FALSE);
-                                registroPonto.setSegundaEntrada(new SimpleDateFormat("HH:mm", Locale.ROOT).format(ldt));
-                            } else if (mySharedPrefs.getBoolean("secondExit", Boolean.TRUE)) {
-                                editor.putBoolean("secondExit", Boolean.FALSE);
-                                editor.putBoolean(new SimpleDateFormat("dd/MM/YYYY", Locale.ROOT).format(ldt), Boolean.FALSE);
-                                registroPonto.setSegundaSaida(new SimpleDateFormat("HH:mm", Locale.ROOT).format(ldt));
-                            }
-                            sendRegister(registroPonto);
-                        } else {
-                            editor.putBoolean("firstEntry", Boolean.TRUE);
-                            editor.putBoolean("firstExit", Boolean.TRUE);
-                            editor.putBoolean("secondEntry", Boolean.TRUE);
-                            editor.putBoolean("secondExit", Boolean.TRUE);
-                        }
-                        editor.apply();
+//                        registroPonto = new RegistroPonto();
+//                        registroPonto.setData(new SimpleDateFormat("dd/MM/YYYY", Locale.ROOT).format(ldt));
+//                        registroPonto.setEmail(mySharedPrefs.getString("email", ""));
+                        if(mySharedPrefs.getInt("photoNumber", 0) == 6)
+                            showToast("Face detectada: " + imagesLabels.get(minIndex) + ". Distance: " + minDistString, Toast.LENGTH_LONG);
+//                        editor = mySharedPrefs.edit();
+//                        if(mySharedPrefs.getBoolean(new SimpleDateFormat("dd/MM/YYYY", Locale.ROOT).format(ldt), Boolean.TRUE)) {
+//                            if (mySharedPrefs.getBoolean("firstEntry", Boolean.TRUE)) {
+//                                editor.putBoolean("firstEntry", Boolean.FALSE);
+//                                registroPonto.setPrimeiraEntrada(new SimpleDateFormat("HH:mm", Locale.ROOT).format(ldt));
+//                            } else if (mySharedPrefs.getBoolean("firstExit", Boolean.TRUE)) {
+//                                editor.putBoolean("firstExit", Boolean.FALSE);
+//                                registroPonto.setPrimeiraSaida(new SimpleDateFormat("HH:mm", Locale.ROOT).format(ldt));
+//                            } else if (mySharedPrefs.getBoolean("secondEntry", Boolean.TRUE)) {
+//                                editor.putBoolean("secondEntry", Boolean.FALSE);
+//                                registroPonto.setSegundaEntrada(new SimpleDateFormat("HH:mm", Locale.ROOT).format(ldt));
+//                            } else if (mySharedPrefs.getBoolean("secondExit", Boolean.TRUE)) {
+//                                editor.putBoolean("secondExit", Boolean.FALSE);
+//                                editor.putBoolean(new SimpleDateFormat("dd/MM/YYYY", Locale.ROOT).format(ldt), Boolean.FALSE);
+//                                registroPonto.setSegundaSaida(new SimpleDateFormat("HH:mm", Locale.ROOT).format(ldt));
+//                            }
+//                            sendRegister(registroPonto);
+//                        } else {
+//                            editor.putBoolean("firstEntry", Boolean.TRUE);
+//                            editor.putBoolean("firstExit", Boolean.TRUE);
+//                            editor.putBoolean("secondEntry", Boolean.TRUE);
+//                            editor.putBoolean("secondExit", Boolean.TRUE);
+//                        }
+//                        editor.apply();
                     }
                     else if (faceDist < faceThreshold) // 2. Near face space but not near a known face class
                         showToast("Face desconhecida. Distância da Face: " + faceDistString + ". Closest Distance: " + minDistString, Toast.LENGTH_LONG);
@@ -508,7 +508,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                 }
 
                 if(!mySharedPrefs.getBoolean("email", Boolean.TRUE)) {
-                    if(mySharedPrefs.getInt("photoNumber", 0) > 6){
+                    if(mySharedPrefs.getInt("photoNumber", 0) == 6){
                         Editor editor = mySharedPrefs.edit();
                         editor.putBoolean("email", Boolean.TRUE);
                         editor.apply();

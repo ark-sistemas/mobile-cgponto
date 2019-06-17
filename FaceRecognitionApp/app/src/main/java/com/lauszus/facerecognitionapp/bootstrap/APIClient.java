@@ -7,7 +7,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class APIClient {
 
-    private final static String ENDPOINT = "http://192.168.43.56:8089";
+    private final static String ENDPOINT = "http://192.168.0.10:8089";
 
     public static Retrofit getClient(final String path){
 
