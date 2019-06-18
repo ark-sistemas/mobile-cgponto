@@ -15,8 +15,8 @@ import retrofit2.http.Path;
 
 public interface UsuarioResource {
 
-    @PUT("/put")
-    Call<Usuario> put(String email); //To change password
+    @PUT("/usuario")
+    Call<Usuario> put(@Body String email); //To change password
 
     @PATCH("/usuario")
     Call<Boolean> patch(@Body Usuario usuario);

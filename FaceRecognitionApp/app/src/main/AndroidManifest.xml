@@ -50,7 +50,6 @@
             android:label="Mapa" />
         <activity
             android:name=".FaceRecognitionAppActivity"
-            android:screenOrientation="fullSensor"
             android:theme="@style/AppBase" />
         <activity
             android:name=".activity.LoginActivity"

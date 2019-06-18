@@ -98,6 +98,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+@RequiresApi(api = Build.VERSION_CODES.O)
 public class FaceRecognitionAppActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2, FieldInitializer {
     private static final String TAG = FaceRecognitionAppActivity.class.getSimpleName();
     private static final int PERMISSIONS_REQUEST_CODE = 0;
@@ -117,11 +118,10 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
     private TinyDB tinydb;
     private Toolbar mToolbar;
     private NativeMethods.TrainFacesTask mTrainFacesTask;
-    private Integer photoNumber = 1;
 
     private RegistroPontoResource registroPontoResource;
     private RegistroPonto registroPonto;
-    private Date ldt;
+    private LocalDateTime ldt;
 
     private void showToast(String message, int duration) {
         if (duration != Toast.LENGTH_SHORT && duration != Toast.LENGTH_LONG)
@@ -177,7 +177,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
         // Train the face recognition algorithms in an asynchronous task, so we do not skip any frames
         if (useEigenfaces) {
             Log.i(TAG, "Training Eigenfaces");
-            showToast("Training " + getResources().getString(R.string.eigenfaces), Toast.LENGTH_SHORT);
+//            showToast("Training " + getResources().getString(R.string.eigenfaces), Toast.LENGTH_SHORT);
 
             mTrainFacesTask = new NativeMethods.TrainFacesTask(imagesMatrix, trainFacesTaskCallback);
         } else {
@@ -218,38 +218,66 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
     private NativeMethods.TrainFacesTask.Callback trainFacesTaskCallback = new NativeMethods.TrainFacesTask.Callback() {
         @Override
         public void onTrainFacesComplete(boolean result) {
-            if (result)
-                showToast("Training complete", Toast.LENGTH_SHORT);
+            if (result) {
+                if(mySharedPrefs.getInt("photoNumber", 0) == 5) {
+                    showToast("Treino da face completo!", Toast.LENGTH_SHORT);
+                }
+            }
             else
                 showToast("Training failed", Toast.LENGTH_LONG);
         }
     };
 
-    private void setPhotoNumber(Integer quantity){
+    private void setPhotoNumber(Integer quantity, Boolean condTreinamento){
         Editor editor = mySharedPrefs.edit();
-        editor.putInt("photoNumber", quantity);
-        editor.apply();
+        if(condTreinamento) {
+            quantity++;
+            editor.putInt("photoNumber", quantity);
+        } else {
+            quantity--;
+            editor.putInt("photoNumber", quantity);
+        }
+            editor.apply();
     }
 
     private void sendRegister(RegistroPonto registroPonto){
-        Call<RegistroPonto> post = registroPontoResource.post(registroPonto);
-        post.enqueue(new Callback<RegistroPonto>() {
-            @Override
-            public void onResponse(Call<RegistroPonto> call, Response<RegistroPonto> response) {
-                showToast("Ponto Registrado com sucesso!", Toast.LENGTH_LONG);
-            }
+        if(mySharedPrefs.getBoolean("firstEntry", Boolean.TRUE)) {
+            Call<RegistroPonto> post = registroPontoResource.post(registroPonto);
+            post.enqueue(new Callback<RegistroPonto>() {
+                @Override
+                public void onResponse(Call<RegistroPonto> call, Response<RegistroPonto> response) {
+                    showToast("Ponto Registrado com sucesso!", Toast.LENGTH_LONG);
+                }
 
-            @Override
-            public void onFailure(Call<RegistroPonto> call, Throwable t) {
-                showToast("Falha no registro. Tente novamente mais tarde!", Toast.LENGTH_LONG);
-            }
-        });
+                @Override
+                public void onFailure(Call<RegistroPonto> call, Throwable t) {
+                    showToast("Falha no registro. Tente novamente mais tarde!", Toast.LENGTH_LONG);
+                }
+            });
+        } else {
+            Call<RegistroPonto> put = registroPontoResource.put(registroPonto);
+            put.enqueue(new Callback<RegistroPonto>() {
+                @Override
+                public void onResponse(Call<RegistroPonto> call, Response<RegistroPonto> response) {
+                    showToast("Ponto Registrado com sucesso!", Toast.LENGTH_LONG);
+
+
+                }
+
+                @Override
+                public void onFailure(Call<RegistroPonto> call, Throwable t) {
+                    showToast("Falha no registro. Tente novamente mais tarde!", Toast.LENGTH_LONG);
+                }
+
+            });
+
+        }
 
         new Handler().postDelayed(() -> {
             startActivity(new Intent(FaceRecognitionAppActivity.this,
                     TelaPrincipalActivity.class));
             finish();
-        }, 1000);
+        }, 1500);
     }
 
     private NativeMethods.MeasureDistTask.Callback measureDistTaskCallback = new NativeMethods.MeasureDistTask.Callback() {
@@ -277,39 +305,59 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
 //                        registroPonto = new RegistroPonto();
 //                        registroPonto.setData(new SimpleDateFormat("dd/MM/YYYY", Locale.ROOT).format(ldt));
 //                        registroPonto.setEmail(mySharedPrefs.getString("email", ""));
-                        if(mySharedPrefs.getInt("photoNumber", 0) == 6)
+                        if(mySharedPrefs.getInt("photoNumber", 0) == 5
+                                && mySharedPrefs.getBoolean("email", Boolean.FALSE)) {
                             showToast("Face detectada: " + imagesLabels.get(minIndex) + ". Distance: " + minDistString, Toast.LENGTH_LONG);
-//                        editor = mySharedPrefs.edit();
-//                        if(mySharedPrefs.getBoolean(new SimpleDateFormat("dd/MM/YYYY", Locale.ROOT).format(ldt), Boolean.TRUE)) {
-//                            if (mySharedPrefs.getBoolean("firstEntry", Boolean.TRUE)) {
-//                                editor.putBoolean("firstEntry", Boolean.FALSE);
-//                                registroPonto.setPrimeiraEntrada(new SimpleDateFormat("HH:mm", Locale.ROOT).format(ldt));
-//                            } else if (mySharedPrefs.getBoolean("firstExit", Boolean.TRUE)) {
-//                                editor.putBoolean("firstExit", Boolean.FALSE);
-//                                registroPonto.setPrimeiraSaida(new SimpleDateFormat("HH:mm", Locale.ROOT).format(ldt));
-//                            } else if (mySharedPrefs.getBoolean("secondEntry", Boolean.TRUE)) {
-//                                editor.putBoolean("secondEntry", Boolean.FALSE);
-//                                registroPonto.setSegundaEntrada(new SimpleDateFormat("HH:mm", Locale.ROOT).format(ldt));
-//                            } else if (mySharedPrefs.getBoolean("secondExit", Boolean.TRUE)) {
-//                                editor.putBoolean("secondExit", Boolean.FALSE);
-//                                editor.putBoolean(new SimpleDateFormat("dd/MM/YYYY", Locale.ROOT).format(ldt), Boolean.FALSE);
-//                                registroPonto.setSegundaSaida(new SimpleDateFormat("HH:mm", Locale.ROOT).format(ldt));
-//                            }
-//                            sendRegister(registroPonto);
-//                        } else {
-//                            editor.putBoolean("firstEntry", Boolean.TRUE);
-//                            editor.putBoolean("firstExit", Boolean.TRUE);
-//                            editor.putBoolean("secondEntry", Boolean.TRUE);
-//                            editor.putBoolean("secondExit", Boolean.TRUE);
-//                        }
-//                        editor.apply();
+                            editor = mySharedPrefs.edit();
+                            if (mySharedPrefs.getBoolean(ldt.format(DateTimeFormatter.ofPattern("dd/MM/YYYY")), Boolean.TRUE)) {
+                                registroPonto = new RegistroPonto();
+                                registroPonto.setEmail(mySharedPrefs.getString("emailString", ""));
+                                registroPonto.setData(ldt.format(DateTimeFormatter.ofPattern("dd/MM/YYYY")));
+                                if (mySharedPrefs.getBoolean("firstEntry", Boolean.TRUE)) {
+                                    editor.putBoolean("firstEntry", Boolean.FALSE);
+                                    registroPonto.setPrimeiraEntrada(ldt.format(DateTimeFormatter.ofPattern("HH:mm")));
+                                } else if (mySharedPrefs.getBoolean("firstExit", Boolean.TRUE)) {
+                                    editor.putBoolean("firstExit", Boolean.FALSE);
+                                    registroPonto.setPrimeiraSaida(ldt.format(DateTimeFormatter.ofPattern("HH:mm")));
+                                } else if (mySharedPrefs.getBoolean("secondEntry", Boolean.TRUE)) {
+                                    editor.putBoolean("secondEntry", Boolean.FALSE);
+                                    registroPonto.setSegundaEntrada(ldt.format(DateTimeFormatter.ofPattern("HH:mm")));
+                                } else if (mySharedPrefs.getBoolean("secondExit", Boolean.TRUE)) {
+                                    editor.putBoolean("secondExit", Boolean.FALSE);
+                                    editor.putBoolean(new SimpleDateFormat("dd/MM/YYYY", Locale.ROOT).format(ldt), Boolean.FALSE);
+                                    registroPonto.setSegundaSaida(ldt.format(DateTimeFormatter.ofPattern("HH:mm")));
+                                }
+                                sendRegister(registroPonto);
+                            } else {
+                                editor.putBoolean("firstEntry", Boolean.TRUE);
+                                editor.putBoolean("firstExit", Boolean.TRUE);
+                                editor.putBoolean("secondEntry", Boolean.TRUE);
+                                editor.putBoolean("secondExit", Boolean.TRUE);
+                            }
+                            editor.apply();
+                        }
                     }
-                    else if (faceDist < faceThreshold) // 2. Near face space but not near a known face class
-                        showToast("Face desconhecida. Distância da Face: " + faceDistString + ". Closest Distance: " + minDistString, Toast.LENGTH_LONG);
-                    else if (minDist < distanceThreshold) // 3. Distant from face space and near a face class
-                        showToast("Reconhecimento falso. Face distance: " + faceDistString + ". Closest Distance: " + minDistString, Toast.LENGTH_LONG);
-                    else // 4. Distant from face space and not near a known face class.
-                        showToast("Não há uma face na foto. Face distance: " + faceDistString + ". Closest Distance: " + minDistString, Toast.LENGTH_LONG);
+                    else if (faceDist < faceThreshold) { // 2. Near face space but not near a known face class
+                        if (mySharedPrefs.getInt("photoNumber", 0) < 5) {
+                            showToast("Falha no treinamento. Tire novamente.", Toast.LENGTH_LONG);
+                            setPhotoNumber(mySharedPrefs.getInt("photoNumber", 1), Boolean.FALSE);
+                        } else
+                            showToast("Face desconhecida. Distância da Face: " + faceDistString + ". Closest Distance: " + minDistString, Toast.LENGTH_LONG);
+                    }
+                    else if (minDist < distanceThreshold) { // 3. Distant from face space and near a face class
+                        if (mySharedPrefs.getInt("photoNumber", 0) < 5) {
+                            showToast("Falha no treinamento. Tire novamente.", Toast.LENGTH_LONG);
+                            setPhotoNumber(mySharedPrefs.getInt("photoNumber", 1), Boolean.FALSE);
+                        } else
+                            showToast("Reconhecimento falso. Face distance: " + faceDistString + ". Closest Distance: " + minDistString, Toast.LENGTH_LONG);
+                    }
+                    else { // 4. Distant from face space and not near a known face class.
+                        if (mySharedPrefs.getInt("photoNumber", 0) < 5) {
+                            showToast("Falha no treinamento. Tire novamente.", Toast.LENGTH_LONG);
+                            setPhotoNumber(mySharedPrefs.getInt("photoNumber", 1), Boolean.FALSE);
+                        } else
+                            showToast("Não há uma face na foto. Face distance: " + faceDistString + ". Closest Distance: " + minDistString, Toast.LENGTH_LONG);
+                    }
                 }
             } else {
                 Log.w(TAG, "Array is null");
@@ -335,102 +383,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
 //        editor.apply();
 //    }
 
-//    private void showLabelsDialog() {
-//        Set<String> uniqueLabelsSet = new HashSet<>(imagesLabels); // Get all unique labels
-//        if (!uniqueLabelsSet.isEmpty()) { // Make sure that there are any labels
-//            // Inspired by: http://stackoverflow.com/questions/15762905/how-can-i-display-a-list-view-in-an-android-alert-dialog
-//            AlertDialog.Builder builder = new AlertDialog.Builder(FaceRecognitionAppActivity.this);
-//            builder.setTitle("Select label:");
-//            builder.setPositiveButton("New face", new DialogInterface.OnClickListener() {
-//                @Override
-//                public void onClick(DialogInterface dialog, int which) {
-//                    dialog.dismiss();
-//                    showEnterLabelDialog();
-//                }
-//            });
-//            builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-//                @Override
-//                public void onClick(DialogInterface dialog, int which) {
-//                    dialog.dismiss();
-//                    images.remove(images.size() - 1); // Remove last image
-//                }
-//            });
-//            builder.setCancelable(false); // Prevent the user from closing the dialog
-//
-//            String[] uniqueLabels = uniqueLabelsSet.toArray(new String[uniqueLabelsSet.size()]); // Convert to String array for ArrayAdapter
-//            Arrays.sort(uniqueLabels); // Sort labels alphabetically
-//            final ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(FaceRecognitionAppActivity.this, android.R.layout.simple_list_item_1, uniqueLabels) {
-//                @Override
-//                public @NonNull View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
-//                    TextView textView = (TextView) super.getView(position, convertView, parent);
-//                    if (getResources().getBoolean(R.bool.isTablet))
-//                        textView.setTextSize(20); // Make text slightly bigger on tablets compared to phones
-//                    else
-//                        textView.setTextSize(18); // Increase text size a little bit
-//                    return textView;
-//                }
-//            };
-//            ListView mListView = new ListView(FaceRecognitionAppActivity.this);
-//            mListView.setAdapter(arrayAdapter); // Set adapter, so the items actually show up
-//            builder.setView(mListView); // Set the ListView
-//
-//            final AlertDialog dialog = builder.show(); // Show dialog and store in final variable, so it can be dismissed by the ListView
-//
-//            mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-//                @Override
-//                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-//                    dialog.dismiss();
-//                    addUser(arrayAdapter.getItem(position));
-//                }
-//            });
-//        } else
-//            showEnterLabelDialog(); // If there is no existing labels, then ask the user for a new label
-//    }
 
-//    private void showEnterLabelDialog() {
-//        AlertDialog.Builder builder = new AlertDialog.Builder(FaceRecognitionAppActivity.this);
-//        builder.setTitle("Please enter your name:");
-//
-//        final EditText input = new EditText(FaceRecognitionAppActivity.this);
-//        input.setInputType(InputType.TYPE_CLASS_TEXT);
-//        builder.setView(input);
-//
-//        builder.setPositiveButton("Submit", null); // Set up positive button, but do not provide a listener, so we can check the string before dismissing the dialog
-//        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-//            @Override
-//            public void onClick(DialogInterface dialog, int which) {
-//                dialog.dismiss();
-//                images.remove(images.size() - 1); // Remove last image
-//            }
-//        });
-//        builder.setCancelable(false); // User has to input a name
-//        AlertDialog dialog = builder.create();
-//
-//        // Source: http://stackoverflow.com/a/7636468/2175837
-//        dialog.setOnShowListener(new DialogInterface.OnShowListener() {
-//            @Override
-//            public void onShow(final DialogInterface dialog) {
-//                Button mButton = ((AlertDialog) dialog).getButton(AlertDialog.BUTTON_POSITIVE);
-//                mButton.setOnClickListener(new View.OnClickListener() {
-//                    @Override
-//                    public void onClick(View view) {
-//                        String string = input.getText().toString().trim();
-//                        if (!string.isEmpty()) { // Make sure the input is valid
-//                            // If input is valid, dismiss the dialog and add the label to the array
-//                            dialog.dismiss();
-//                            addUser(string);
-//                        }
-//                    }
-//                });
-//            }
-//        });
-//
-//        // Show keyboard, so the user can start typing straight away
-//        dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
-//
-//        dialog.show();
-
-//    }
 
     @Override
     public void initFields(){
@@ -438,8 +391,13 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                 .create(RegistroPontoResource.class);
 
         registroPonto = new RegistroPonto();
-        ldt = new Date();
+        ldt = LocalDateTime.now();
         mySharedPrefs = PreferencesMap.getSharedPreferences(this);
+        if(mySharedPrefs.getInt("photoNumber", 0) != 5) {
+            SharedPreferences.Editor ed = mySharedPrefs.edit();
+            ed.putInt("photoNumber", 0);
+            ed.apply();
+        }
     }
 
     @Override
@@ -465,7 +423,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
         tinydb = new TinyDB(this); // Used to store ArrayLists in the shared preferences
 
         faceThreshold = 0.100f; // Get initial value
-        distanceThreshold = 0.110f; // Get initial value
+        distanceThreshold = 0.070f; // Get initial value
         maximumImages = 50; // Get initial value
 
         findViewById(R.id.take_picture_button).setOnClickListener(new View.OnClickListener() {
@@ -508,12 +466,10 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                 }
 
                 if(!mySharedPrefs.getBoolean("email", Boolean.TRUE)) {
-                    if(mySharedPrefs.getInt("photoNumber", 0) == 6){
+                    if(mySharedPrefs.getInt("photoNumber", 0) == 5){
                         Editor editor = mySharedPrefs.edit();
                         editor.putBoolean("email", Boolean.TRUE);
                         editor.apply();
-                        Toast.makeText(FaceRecognitionAppActivity.this,
-                                "Treinamento completo!", Toast.LENGTH_SHORT).show();
                         new Handler().postDelayed(() -> {
                             startActivity(new Intent(FaceRecognitionAppActivity.this,
                                     TelaPrincipalActivity.class));
@@ -523,7 +479,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                         mMeasureDistTask = new NativeMethods.MeasureDistTask(useEigenfaces, measureDistTaskCallback);
                         mMeasureDistTask.execute(image);
                         addUser();
-                        setPhotoNumber(photoNumber++);
+                        setPhotoNumber(mySharedPrefs.getInt("photoNumber", 0), Boolean.TRUE);
                     }
                 } else {
                     // Calculate normalized Euclidean distance
@@ -531,7 +487,6 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                     mMeasureDistTask.execute(image);
                 }
 
-//                showLabelsDialog();
             }
         });
 

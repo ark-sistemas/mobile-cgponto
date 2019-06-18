@@ -41,12 +41,12 @@
             android:layout_height="10dp" />
 
         <Button
+            android:id="@+id/btn_send_passwd"
             android:layout_width="200dp"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-condensed-medium"
             android:background="@drawable/btn_rounded"
             android:text="@string/btn_send"
-            android:textColor="@color/buttonTextColor"
-            android:onClick="sendEmail"/>
+            android:textColor="@color/buttonTextColor"/>
     </LinearLayout>
 </android.support.constraint.ConstraintLayout>
