@@ -84,14 +84,14 @@ public class LoginActivity extends AppCompatActivity implements FieldInitializer
         }
     }
 
-    private void sendToLoginService(Usuario usuario){
-        Call<Boolean> patch = usuarioResource.patch(usuario);
-        patch.enqueue(new Callback<Boolean>() {
+    private void sendToLoginService(Usuario user){
+        Call<Usuario> patch = usuarioResource.patch(user);
+        patch.enqueue(new Callback<Usuario>() {
             @Override
-            public void onResponse(Call<Boolean> call, Response<Boolean> response) {
-                Boolean condition = response.body();
-                if(condition == Boolean.TRUE){
-                    boolean firstLogin = isFirstLogin(edtUser.getText().toString());
+            public void onResponse(Call<Usuario> call, Response<Usuario> response) {
+                Usuario responseUser = response.body();
+                if(responseUser != null){
+                    boolean firstLogin = isFirstLogin(responseUser);
                     if(firstLogin) {
                         Intent i = new Intent(LoginActivity.this, FaceRecognitionAppActivity.class);
                         startActivity(i);
@@ -106,7 +106,7 @@ public class LoginActivity extends AppCompatActivity implements FieldInitializer
             }
 
             @Override
-            public void onFailure(Call<Boolean> call, Throwable t) {
+            public void onFailure(Call<Usuario> call, Throwable t) {
                 Toast.makeText(LoginActivity.this, "Erro ao tentar realizar login!",
                         Toast.LENGTH_LONG).show();
             }
@@ -136,13 +136,13 @@ public class LoginActivity extends AppCompatActivity implements FieldInitializer
      * <a href="https://android.googlesource.com/platform/frameworks/base/+/master/core/java/android/app/SharedPreferencesImpl.java">
      *     SharedPreferencesImpl
      * </a>
-     * @param email
+     * @param user
      * @return
      */
-    private boolean isFirstLogin(String email){
+    private boolean isFirstLogin(Usuario user){
 
         if(!this.sharedPreferences.getBoolean("email", Boolean.FALSE)){
-            setFirstLoginStatus(email);
+            setFirstLoginStatus(user.getLogin(), user.getNome());
             return true;
         } else {
             return false;
@@ -159,14 +159,12 @@ public class LoginActivity extends AppCompatActivity implements FieldInitializer
      *
      * @param email email used as value to the SharedPreferences
      */
-    private void setFirstLoginStatus(String email){
+    private void setFirstLoginStatus(String email, String username){
         SharedPreferences.Editor editor = this.sharedPreferences.edit();
         editor.putBoolean("email", Boolean.FALSE);
         editor.putString("emailString", email);
+        editor.putString("username", username);
         editor.apply();
     }
 
-    private Boolean isLogged(){
-        return sharedPreferences.getBoolean("email", Boolean.FALSE);
-    }
 }

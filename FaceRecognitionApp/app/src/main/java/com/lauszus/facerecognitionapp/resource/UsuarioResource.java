@@ -19,5 +19,5 @@ public interface UsuarioResource {
     Call<Usuario> put(@Body String email); //To change password
 
     @PATCH("/usuario")
-    Call<Boolean> patch(@Body Usuario usuario);
+    Call<Usuario> patch(@Body Usuario usuario);
 }

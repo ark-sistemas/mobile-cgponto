@@ -20,7 +20,7 @@
     <string name="label_slide_fc_pic">Tire algumas fotos de seu rosto com o
         celular na posição vertical para o treinamento…</string>
     <string name="label_slide_ilumination_warning">Mas cuidado com a iluminação!
-        Não fique na frente de luzes para o treinamento!</string>
+        Luz muito forte pode atrapalhar no treinamento!</string>
     <string name="label_slide_recognition">Treinamento finalizado e o
         registro de ponto estará disponível com o reconhecimento da sua face!</string>
 

@@ -66,8 +66,6 @@ public class ForgotPasswdActivity extends AppCompatActivity implements FieldInit
 
     private void sendEmail(String email){
         if(validateFields(txtEmailRedef.getText().toString())){
-            Toast.makeText(ForgotPasswdActivity.this, email, Toast.LENGTH_SHORT).show();
-
             Call<Usuario> put = usuarioResource.put(email);
 
             put.enqueue(new Callback<Usuario>() {

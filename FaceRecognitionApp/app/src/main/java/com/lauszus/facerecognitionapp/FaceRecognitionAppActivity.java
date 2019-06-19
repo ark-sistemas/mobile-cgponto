@@ -134,7 +134,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
 
     private void addUser() {
 
-        String user = mySharedPrefs.getString("emailString", "");
+        String user = mySharedPrefs.getString("username", "");
         if (user.isEmpty()) {
             showToast("Usuário não existente", Toast.LENGTH_LONG);
             finish();
@@ -238,7 +238,8 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
             editor.apply();
     }
 
-    private void sendRegister(RegistroPonto registroPonto){
+    private void sendRegister(RegistroPonto registroPonto, int minIndex){
+        showToast("Face detectada: " + imagesLabels.get(minIndex), Toast.LENGTH_LONG);
         if(mySharedPrefs.getBoolean("firstEntry", Boolean.TRUE)) {
             Call<RegistroPonto> post = registroPontoResource.post(registroPonto);
             post.enqueue(new Callback<RegistroPonto>() {
@@ -302,7 +303,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
 
                         if(mySharedPrefs.getInt("photoNumber", 0) == 5
                                 && mySharedPrefs.getBoolean("email", Boolean.FALSE)) {
-                            showToast("Face detectada: " + imagesLabels.get(minIndex) + ". Distance: " + minDistString, Toast.LENGTH_LONG);
+
                             editor = mySharedPrefs.edit();
                             if (mySharedPrefs.getBoolean(ldt.format(DateTimeFormatter.ofPattern("dd/MM/YYYY")), Boolean.TRUE)) {
                                 registroPonto = new RegistroPonto();
@@ -322,7 +323,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                                     editor.putBoolean(new SimpleDateFormat("dd/MM/YYYY", Locale.ROOT).format(ldt), Boolean.FALSE);
                                     registroPonto.setSegundaSaida(ldt.format(DateTimeFormatter.ofPattern("HH:mm")));
                                 }
-                                sendRegister(registroPonto);
+                                sendRegister(registroPonto, minIndex);
                             } else {
                                 editor.putBoolean("firstEntry", Boolean.TRUE);
                                 editor.putBoolean("firstExit", Boolean.TRUE);
@@ -358,7 +359,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                 Log.w(TAG, "Array is null");
                 if (useEigenfaces || uniqueLabels == null || uniqueLabels.length > 1) {
                     showToast("Treinando...", Toast.LENGTH_SHORT);
-                    setPhotoNumber(mySharedPrefs.getInt("photoNumber", 2), Boolean.FALSE);
+                    setPhotoNumber(mySharedPrefs.getInt("photoNumber", 1), Boolean.FALSE);
                 }
                 else
                     showToast("Fisherfaces needs two different faces", Toast.LENGTH_SHORT);
