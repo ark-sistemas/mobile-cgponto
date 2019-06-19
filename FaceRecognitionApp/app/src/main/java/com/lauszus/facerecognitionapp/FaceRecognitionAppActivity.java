@@ -352,7 +352,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                             showToast("Falha no treinamento. Tire novamente.", Toast.LENGTH_LONG);
                             setPhotoNumber(mySharedPrefs.getInt("photoNumber", 1), Boolean.FALSE);
                         } else
-                            showToast("Não há uma face na foto. Face distance: " + faceDistString + ". Closest Distance: " + minDistString, Toast.LENGTH_LONG);
+                            showToast("Não há uma face na foto.", Toast.LENGTH_LONG);
                     }
                 }
             } else {
