@@ -7,11 +7,15 @@
 
 package com.lauszus.facerecognitionapp.activity;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.drawable.Drawable;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -167,4 +171,31 @@ public class LoginActivity extends AppCompatActivity implements FieldInitializer
         editor.apply();
     }
 
+    @SuppressLint("ClickableViewAccessibility")
+    private void setDrawableAction(EditText edtPassword){
+        Drawable passwOn = ContextCompat.getDrawable(this, R.drawable.passw_on_24);
+        Drawable passwOff = ContextCompat.getDrawable(this, R.drawable.passw_off_24);
+
+
+        edtPassword.setOnTouchListener(new View.OnTouchListener() {
+            final int DRAWABLE_LEFT = 0;
+            final int DRAWABLE_TOP = 1;
+            final int DRAWABLE_RIGHT = 2;
+            final int DRAWABLE_BOTTOM = 3;
+
+            @Override
+            public boolean onTouch(View view, MotionEvent event) {
+
+                if(event.getAction() == MotionEvent.ACTION_UP) {
+                    if(event.getRawX() >= (edtPassword.getRight() - edtPassword.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width())) {
+                        // your action here
+
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        });
+    }
 }
