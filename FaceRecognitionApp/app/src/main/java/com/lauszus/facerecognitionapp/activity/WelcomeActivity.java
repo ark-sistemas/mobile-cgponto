@@ -82,6 +82,15 @@ public class WelcomeActivity extends AppIntro {
                 ContextCompat.getColor(this, R.color.textColor),
                 ContextCompat.getColor(this, R.color.textColor)));
 
+        // Face picture slider
+        addSlide(AppIntroFragment.newInstance(null, null,
+                getResources().getString(R.string.label_slide_ilumination_warning),
+                null,
+                R.drawable.flash_off,
+                ContextCompat.getColor(this, R.color.backgroundColor),
+                ContextCompat.getColor(this, R.color.textColor),
+                ContextCompat.getColor(this, R.color.textColor)));
+
         // Face recognition slider
         addSlide(AppIntroFragment.newInstance(null, null,
                 getResources().getString(R.string.label_slide_recognition),
@@ -91,7 +100,7 @@ public class WelcomeActivity extends AppIntro {
                 ContextCompat.getColor(this, R.color.textColor),
                 ContextCompat.getColor(this, R.color.textColor)));
 
-        showSkipButton(true);
+        showSkipButton(false);
         setProgressButtonEnabled(true);
         setFadeAnimation();
 

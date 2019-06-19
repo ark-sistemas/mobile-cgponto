@@ -135,11 +135,9 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
     private void addUser() {
 
         String user = mySharedPrefs.getString("emailString", "");
-        //        String label = string.substring(0, 1).toUpperCase(Locale.US) + string.substring(1).trim().toLowerCase(Locale.US); // Make sure that the name is always uppercase and rest is lowercase
         if (user.isEmpty()) {
             showToast("Usuário não existente", Toast.LENGTH_LONG);
             finish();
-            return;
         }
         imagesLabels.add(user); // Add label to list of labels
         Log.i(TAG, "User: " + user);
@@ -219,12 +217,12 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
         @Override
         public void onTrainFacesComplete(boolean result) {
             if (result) {
-                if(mySharedPrefs.getInt("photoNumber", 0) == 5) {
-                    showToast("Treino da face completo!", Toast.LENGTH_SHORT);
-                }
+//                if(mySharedPrefs.getInt("photoNumber", 0) == 5) {
+//                    showToast("Treino da face completo!", Toast.LENGTH_SHORT);
+//                }
             }
             else
-                showToast("Training failed", Toast.LENGTH_LONG);
+                showToast("Iniciliazação/treinamento falhou", Toast.LENGTH_LONG);
         }
     };
 
@@ -302,9 +300,6 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                     if (faceDist < faceThreshold && minDist < distanceThreshold) { // 1. Near face space and near a face class
 //                        findViewById(R.id.take_picture_button).setEnabled(false);
 
-//                        registroPonto = new RegistroPonto();
-//                        registroPonto.setData(new SimpleDateFormat("dd/MM/YYYY", Locale.ROOT).format(ldt));
-//                        registroPonto.setEmail(mySharedPrefs.getString("email", ""));
                         if(mySharedPrefs.getInt("photoNumber", 0) == 5
                                 && mySharedPrefs.getBoolean("email", Boolean.FALSE)) {
                             showToast("Face detectada: " + imagesLabels.get(minIndex) + ". Distance: " + minDistString, Toast.LENGTH_LONG);
@@ -342,14 +337,14 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                             showToast("Falha no treinamento. Tire novamente.", Toast.LENGTH_LONG);
                             setPhotoNumber(mySharedPrefs.getInt("photoNumber", 1), Boolean.FALSE);
                         } else
-                            showToast("Face desconhecida. Distância da Face: " + faceDistString + ". Closest Distance: " + minDistString, Toast.LENGTH_LONG);
+                            showToast("Face desconhecida", Toast.LENGTH_LONG);
                     }
                     else if (minDist < distanceThreshold) { // 3. Distant from face space and near a face class
                         if (mySharedPrefs.getInt("photoNumber", 0) < 5) {
                             showToast("Falha no treinamento. Tire novamente.", Toast.LENGTH_LONG);
                             setPhotoNumber(mySharedPrefs.getInt("photoNumber", 1), Boolean.FALSE);
                         } else
-                            showToast("Reconhecimento falso. Face distance: " + faceDistString + ". Closest Distance: " + minDistString, Toast.LENGTH_LONG);
+                            showToast("Reconhecimento falso.", Toast.LENGTH_LONG);
                     }
                     else { // 4. Distant from face space and not near a known face class.
                         if (mySharedPrefs.getInt("photoNumber", 0) < 5) {
@@ -361,8 +356,10 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                 }
             } else {
                 Log.w(TAG, "Array is null");
-                if (useEigenfaces || uniqueLabels == null || uniqueLabels.length > 1)
-                    showToast("Treinando...", Toast.LENGTH_LONG);
+                if (useEigenfaces || uniqueLabels == null || uniqueLabels.length > 1) {
+                    showToast("Treinando...", Toast.LENGTH_SHORT);
+                    setPhotoNumber(mySharedPrefs.getInt("photoNumber", 2), Boolean.FALSE);
+                }
                 else
                     showToast("Fisherfaces needs two different faces", Toast.LENGTH_SHORT);
             }
@@ -470,6 +467,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                         Editor editor = mySharedPrefs.edit();
                         editor.putBoolean("email", Boolean.TRUE);
                         editor.apply();
+                        showToast("Treinamento completo!", Toast.LENGTH_LONG);
                         new Handler().postDelayed(() -> {
                             startActivity(new Intent(FaceRecognitionAppActivity.this,
                                     TelaPrincipalActivity.class));
@@ -479,7 +477,15 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
                         mMeasureDistTask = new NativeMethods.MeasureDistTask(useEigenfaces, measureDistTaskCallback);
                         mMeasureDistTask.execute(image);
                         addUser();
-                        setPhotoNumber(mySharedPrefs.getInt("photoNumber", 0), Boolean.TRUE);
+                        int qntPhoto = mySharedPrefs.getInt("photoNumber", 0);
+                        if(qntPhoto == 0)
+                            showToast(qntPhoto+1 + "ª foto.", Toast.LENGTH_SHORT);
+                        else
+                            if(qntPhoto < 5)
+                                showToast(qntPhoto + "ª foto.", Toast.LENGTH_SHORT);
+                            else
+                                showToast("Mais umam foto para finalizar...", Toast.LENGTH_SHORT);
+                        setPhotoNumber(qntPhoto, Boolean.TRUE);
                     }
                 } else {
                     // Calculate normalized Euclidean distance
@@ -503,7 +509,7 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
             }
         });
 
-        mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.camera_java_surface_view);
+        mOpenCvCameraView = findViewById(R.id.camera_java_surface_view);
         mOpenCvCameraView.setCameraIndex(prefs.getInt("mCameraIndex", CameraBridgeViewBase.CAMERA_ID_FRONT));
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
         mOpenCvCameraView.setCvCameraViewListener(this);
@@ -518,16 +524,14 @@ public class FaceRecognitionAppActivity extends AppCompatActivity implements Cam
 
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
-        switch (requestCode) {
-            case PERMISSIONS_REQUEST_CODE:
-                // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    loadOpenCV();
-                } else {
-                    showToast("Permission required!", Toast.LENGTH_LONG);
-                    finish();
-                }
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode == PERMISSIONS_REQUEST_CODE) {// If request is cancelled, the result arrays are empty.
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                loadOpenCV();
+            } else {
+                showToast("Permission required!", Toast.LENGTH_LONG);
+                finish();
+            }
         }
     }
 

@@ -16,12 +16,13 @@
     <string name="new_game">New Game</string>
     <string name="help">Help</string>
 
-    <string name="label_slide_login">Faça login utilizando seu e-mail cadastrado
-    e sua senha…</string>
-    <string name="label_slide_fc_pic">Tire uma foto de seu rosto com o
-        celular na posição vertical…</string>
-    <string name="label_slide_recognition">E então o registro de ponto estará disponível com o
-        reconhecimento da sua face!</string>
+    <string name="label_slide_login">Faça login utilizando seu e-mail e senha cadastrados</string>
+    <string name="label_slide_fc_pic">Tire algumas fotos de seu rosto com o
+        celular na posição vertical para o treinamento…</string>
+    <string name="label_slide_ilumination_warning">Mas cuidado com a iluminação!
+        Não fique na frente de luzes para o treinamento!</string>
+    <string name="label_slide_recognition">Treinamento finalizado e o
+        registro de ponto estará disponível com o reconhecimento da sua face!</string>
 
     <!-- ALERT DIALOG -->
     <string name="label_dialog_title">Escolhe uma ação</string>

@@ -9,16 +9,13 @@
     tools:context=".activity.TelaPrincipalActivity"
     android:background="@color/backgroundColor">
     
-    <Button
-        android:id="@+id/menu_mapa"
-        android:layout_width="152dp"
-        android:layout_height="116dp"
-        android:drawableBottom="@drawable/ic_action_novo_ponto"
-        android:padding="38dp"
+    <ImageView
+        android:layout_width="100dp"
+        android:layout_height="100dp"
         android:layout_marginBottom="20dp"
-        tools:layout_editor_absoluteX="124dp"
-        tools:layout_editor_absoluteY="120dp"
-        android:background="@color/backgroundColor"
+        android:layout_gravity="center_horizontal"
+        android:background="@drawable/photo_camera"
+        android:foregroundGravity="center"
         />
 
     <Button

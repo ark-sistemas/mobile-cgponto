@@ -72,6 +72,7 @@ public class LoginActivity extends AppCompatActivity implements FieldInitializer
 
     public void login(View view) {
         try {
+//            startActivity(new Intent(this, TelaPrincipalActivity.class));
             if(validateFields(edtUser.getText().toString(), edtPassword.getText().toString())) {
                 this.usuario = new Usuario();
                 this.usuario.setLogin(edtUser.getText().toString());
